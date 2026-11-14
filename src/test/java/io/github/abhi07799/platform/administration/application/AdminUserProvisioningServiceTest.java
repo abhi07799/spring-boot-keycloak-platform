@@ -45,7 +45,7 @@ class AdminUserProvisioningServiceTest {
     void setUp() {
         service = new AdminUserProvisioningService(
                 keycloakAdminClient, userProfileRepository, auditPersistenceService, roleChangeLockService);
-        org.mockito.Mockito.doAnswer(invocation -> ((java.util.function.Supplier<?>) invocation.getArgument(0)).get())
+        org.mockito.Mockito.lenient().doAnswer(invocation -> ((java.util.function.Supplier<?>) invocation.getArgument(0)).get())
                 .when(roleChangeLockService).withRoleChangeLock(org.mockito.ArgumentMatchers.any());
     }
 
