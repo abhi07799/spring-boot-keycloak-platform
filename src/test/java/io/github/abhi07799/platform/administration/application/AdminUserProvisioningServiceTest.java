@@ -112,7 +112,7 @@ class AdminUserProvisioningServiceTest {
         doThrow(new IllegalStateException("delete failed"))
                 .when(keycloakAdminClient).deleteUser("keycloak-user-123");
 
-        assertThatThrownBy(() -> service.provision(request(AdminUserProvisioningRequest.ProvisionedRole.STAFF)))
+        assertThatThrownBy(() -> service.provision(request(AdminUserProvisioningRequest.ProvisionedRole.STAFF), "admin-subject"))
                 .isInstanceOf(RegistrationCompensationException.class);
     }
 
