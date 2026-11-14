@@ -7,7 +7,6 @@ import io.github.abhi07799.platform.user.infrastructure.persistence.UserProfileR
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.UUID;
 
@@ -26,7 +25,6 @@ public class AdminUserStatusService {
         this.keycloakAdminClient = keycloakAdminClient;
     }
 
-    @Transactional
     public UserProfileResponse updateEnabledStatus(UUID userId, boolean enabled) {
         UserProfile profile = userProfileRepository.findById(userId)
                 .orElseThrow(AdminUserNotFoundException::new);
