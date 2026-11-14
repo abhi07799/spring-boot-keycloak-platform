@@ -43,11 +43,9 @@ public class AdminUserRoleService {
             if (context.previousRole == null || context.previousRole.equals(requestedRole.name())) {
                 throw failure;
             }
-            UserProfile target = userProfileRepository.findById(userId)
-                    .orElseThrow(AdminUserNotFoundException::new);
             try {
                 keycloakAdminClient.updateClientRole(
-                        target.getKeycloakSubjectId(), "platform-api", context.previousRole);
+                        context.targetKeycloakSubjectId, "platform-api", context.previousRole);
             } catch (RuntimeException compensationFailure) {
                 log.error("Role update compensation failed for application user id {}", userId,
                         compensationFailure);
@@ -69,6 +67,7 @@ public class AdminUserRoleService {
             throw new AdminSelfRoleChangeException();
         }
 
+        context.targetKeycloakSubjectId = profile.getKeycloakSubjectId();
         String previousRole;
         try {
             previousRole = keycloakAdminClient.updateClientRole(
@@ -90,6 +89,7 @@ public class AdminUserRoleService {
     }
 
     private static final class RoleChangeContext {
+        private String targetKeycloakSubjectId;
         private String previousRole;
     }
 }
