@@ -60,7 +60,7 @@ Flyway applies versioned migrations at startup. Hibernate validates the resultin
 - Public registration assigns only `USER`.
 - An authenticated `ADMIN` can create `STAFF` or `ADMIN`; the first administrator is provisioned through a one-time, non-public bootstrap process.
 - Swagger UI uses a public OAuth client with PKCE. Administrative Keycloak operations use a separate confidential service account with least-privilege permissions.
-- The API validates JWT signature, issuer, timestamps, and the `platform-api` audience. Keycloak client roles are mapped to Spring Security role authorities.
+- The API validates JWT signature, issuer, timestamps, and the `platform-api` audience. Every bearer-token authentication also checks the JWT subject against the application profile's enabled status in PostgreSQL; disabled or missing profiles are rejected. Keycloak client roles are mapped to Spring Security role authorities.
 
 ## Keycloak clients
 - `platform-api`: bearer-only API audience and role owner.
@@ -74,7 +74,7 @@ See [Keycloak configuration](docs/keycloak/README.md), [security setup](docs/sec
 - `main`: stable baseline.
 - `develop`: integration branch.
 - `step1/initial-project-setup`: initial repository baseline.
-- Later milestones use numbered prefixes such as `step2.1/`, `step2.2/`, `step2.3/`, `step2.4/`, `step3.1/`, `step3.2/`, `step3.3/`, `step3.4/`, `step3.5/`, `step3.6/`, `step3.7/`, `step3.8/`, and `step3.9/`.
+- Later milestones use numbered prefixes such as `step2.1/`, `step2.2/`, `step2.3/`, `step2.4/`, `step3.1/`, `step3.2/`, `step3.3/`, `step3.4/`, `step3.5/`, `step3.6/`, `step3.7/`, `step3.8/`, `step3.9/`, and `step3.10/`.
 
 ## Learning journal
 See [LEARNING.md](LEARNING.md).
