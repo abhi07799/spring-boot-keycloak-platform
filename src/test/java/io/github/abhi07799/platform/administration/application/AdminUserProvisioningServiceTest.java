@@ -69,6 +69,23 @@ class AdminUserProvisioningServiceTest {
         order.verify(keycloakAdminClient).createUser(any());
         order.verify(keycloakAdminClient).assignClientRole("keycloak-user-123", "platform-api", "STAFF");
         order.verify(auditPersistenceService).persistProvisionedUser(any(), org.mockito.ArgumentMatchers.eq("admin-subject"), org.mockito.ArgumentMatchers.eq("STAFF"));
+        order.verify(keycloakAdminClient).sendVerifyEmail("keycloak-user-123");
+        verify(keycloakAdminClient, never()).deleteUser(any());
+    }
+
+    @Test
+    void keepsProvisioningSuccessfulWhenVerificationEmailDeliveryFails() {
+        when(userProfileRepository.existsByEmailIgnoreCase("person@example.com")).thenReturn(false);
+        when(keycloakAdminClient.createUser(any())).thenReturn("keycloak-user-123");
+        when(auditPersistenceService.persistProvisionedUser(any(), any(), any()))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+        doThrow(new IllegalStateException("SMTP unavailable"))
+                .when(keycloakAdminClient).sendVerifyEmail("keycloak-user-123");
+
+        RegistrationResponse response = service.provision(
+                request(AdminUserProvisioningRequest.ProvisionedRole.STAFF), "admin-subject");
+
+        assertThat(response.email()).isEqualTo("person@example.com");
         verify(keycloakAdminClient, never()).deleteUser(any());
     }
 
