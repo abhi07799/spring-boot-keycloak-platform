@@ -12,7 +12,11 @@ io.github.abhi07799.platform
 │   ├── api/                # Registration endpoint and request/response contracts
 │   ├── application/        # Registration use case and orchestration
 │   └── infrastructure/     # Keycloak Admin REST API integration
-├── user/                   # Application user profile and persistence
+├── user/
+│   ├── api/                # Authenticated profile endpoint and response contract
+│   ├── application/        # Profile lookup use case
+│   └── infrastructure/
+│       └── persistence/    # Application profile entity and repository
 └── administration/         # Privileged user provisioning and admin use cases
 ```
 
@@ -21,5 +25,5 @@ io.github.abhi07799.platform
 - Organize by business capability, not by global technical layers such as `controller/`, `service/`, and `repository/`.
 - Keep domain rules inside the owning feature; avoid cross-feature entity access.
 - Share code only when it is genuinely generic and stable.
-- Keycloak credentials remain in Keycloak. The `user` feature will store application profile data and the Keycloak subject identifier only.
-- The skeleton does not add security or persistence configuration yet; those are separate implementation milestones.
+- Keycloak credentials remain in Keycloak. The `user` feature stores application profile data and the Keycloak subject identifier only.
+- The current-user endpoint derives identity exclusively from the validated JWT subject; it does not accept a user ID from the request.
