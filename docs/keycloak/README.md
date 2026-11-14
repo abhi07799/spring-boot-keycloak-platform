@@ -18,6 +18,15 @@ Swagger's local redirect URI is `http://localhost:8080/swagger-ui/oauth2-redirec
 
 The Swagger client has an explicit audience mapper for `platform-api`, so its access tokens can carry the API audience claim. The API client roles are emitted under `resource_access.platform-api.roles` when the corresponding role mappings are included in the token.
 
+Full Scope Allowed is disabled on all three clients. After import, explicitly add the API roles to the Swagger client's dedicated role scope so those roles can be included in Swagger-issued access tokens:
+
+1. Open **Clients → Platform Swagger → Client scopes**.
+2. Open the dedicated scope for `platform-swagger` (not the shared built-in `roles` scope).
+3. Open its **Scope** tab and add the `ADMIN`, `STAFF`, and `USER` roles from the `platform-api` client.
+4. Save and use the client's scope evaluation to confirm that the expected client roles and `platform-api` audience appear in the access token.
+
+This is an explicit least-privilege mapping: do not enable Full Scope Allowed as a shortcut.
+
 ## Client roles
 
 The `platform-api` client owns these roles:
@@ -47,4 +56,4 @@ Keycloak 26.8.2 applies additional restrictions to protocol-mapper administratio
 - Do not enable Direct Access Grants (password grant) for these clients.
 - The realm import contains no user passwords, bootstrap admin credentials, or client secrets.
 - The bootstrap administrator is a local Keycloak server administrator, separate from the platform's application-level `ADMIN` client role.
-- The initial client definitions retain Keycloak's default full-scope role behavior for the initial local integration. Before production use, disable Full Scope Allowed and explicitly configure role scope mappings, then verify the effective token with Keycloak's client-scope evaluation.
+- Full Scope Allowed is disabled on all three clients. The Swagger client's dedicated scope must explicitly include only the `platform-api` client roles required by the API.
