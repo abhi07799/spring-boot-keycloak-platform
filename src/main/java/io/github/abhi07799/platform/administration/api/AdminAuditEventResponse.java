@@ -13,6 +13,8 @@ public record AdminAuditEventResponse(
         String assignedRole,
         Boolean previousEnabled,
         Boolean newEnabled,
+        String previousRole,
+        String newRole,
         Instant occurredAt
 ) {
     public static AdminAuditEventResponse from(AdminAuditEvent event) {
@@ -24,6 +26,8 @@ public record AdminAuditEventResponse(
                 event.getAssignedRole(),
                 event.getPreviousEnabled(),
                 event.getNewEnabled(),
+                event.getPreviousRole(),
+                event.getNewRole(),
                 event.getOccurredAt());
     }
 }
