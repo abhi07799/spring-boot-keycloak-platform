@@ -22,10 +22,18 @@ A learning-oriented backend platform built with Java 21, Spring Boot 4.1.2, Keyc
 - Modular monolith; no frontend application.
 - Separate PostgreSQL services and persistent volumes for application data and Keycloak.
 - Keycloak owns credentials and authentication; the application database owns profile and business data plus the Keycloak subject identifier.
-- Keycloak client roles: `ADMIN`, `STAFF`, and `USER`.
+- Keycloak client roles: `ADMIN`, `STAFF`, and `USER` under the `platform-api` client.
 - Public registration assigns only `USER`.
 - An authenticated `ADMIN` can create `STAFF` or `ADMIN`; the first administrator is provisioned through a one-time, non-public bootstrap process.
 - Swagger UI uses a public OAuth client with PKCE. Administrative Keycloak operations use a separate confidential service account with least-privilege permissions.
+
+## Keycloak clients
+- `platform-api`: bearer-only API audience and role owner.
+- `platform-swagger`: public Swagger UI client using Authorization Code + PKCE S256.
+- `platform-admin-service`: confidential service-account client for backend Admin REST API calls.
+- Full Scope Allowed is disabled; Swagger receives only explicitly mapped API client roles.
+
+See [Keycloak configuration](docs/keycloak/README.md) and [local infrastructure](docs/docker/README.md).
 
 ## Branch workflow
 - `main`: stable baseline.

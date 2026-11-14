@@ -62,3 +62,35 @@ Keycloak starts only after `keycloak-db` is healthy. The application database is
 
 **Verification**
 The Compose YAML was parsed successfully and its three services, two named volumes, and two networks were inspected. Docker Compose is not installed in this execution environment, so `docker compose config`, image pulls, container startup, and live health checks remain to be run on a machine with Docker Compose v2. No live-container success is claimed.
+
+
+## Step 2.2 — Keycloak realm and clients
+
+**What we implemented**
+- Added an importable `platform` realm definition and enabled first-startup import through Docker Compose.
+- Defined the bearer-only `platform-api` resource identifier, public `platform-swagger` client with Authorization Code + PKCE S256, and confidential `platform-admin-service` client with service accounts enabled.
+- Added the `ADMIN`, `STAFF`, and `USER` client roles under `platform-api`.
+- Added an explicit `platform-api` audience mapper to Swagger-issued access tokens.
+- Disabled Full Scope Allowed on all clients and documented the explicit Swagger role-scope mapping.
+- Documented manual, least-privilege service-account role assignment without committing credentials.
+
+**Why**
+Authentication, API audience validation, application authorization roles, and privileged Admin REST API access have distinct responsibilities. Separate clients make those boundaries explicit and keep the confidential service credential out of browser-facing Swagger UI.
+
+**Important concepts**
+- **Realm import:** Keycloak can import a realm JSON file at startup. Import is for realm creation; it does not continuously synchronize changes into an already-existing realm.
+- **Public client:** cannot safely hold a client secret. Swagger uses Authorization Code with PKCE S256.
+- **Confidential service account:** authenticates server-to-server with client credentials and must receive only the Admin REST API permissions it needs.
+- **Audience (`aud`):** identifies the API for which an access token is intended. The backend will validate the API audience in addition to issuer and signature.
+- **Client roles:** appear under `resource_access` in access tokens when their role mappings are included.
+- **Role scope mapping:** limits which assigned roles a client is allowed to receive in its tokens; Full Scope Allowed remains disabled.
+
+**Files changed**
+- `compose.yaml`
+- `infra/keycloak/realm/platform-realm.json`
+- `docs/keycloak/README.md`
+- `docs/docker/README.md`
+- `LEARNING.md`
+
+**Verification**
+The realm definition was generated as JSON and structurally validated. Docker Compose and a live Keycloak container are not available in this execution environment, so the import, generated service-account credentials, role assignments, and actual JWT claims still require local runtime verification.

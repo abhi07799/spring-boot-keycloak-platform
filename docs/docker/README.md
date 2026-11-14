@@ -1,6 +1,6 @@
 # Local Infrastructure
 
-This milestone starts the two independent PostgreSQL 16 instances and Keycloak 26.8.2.
+This milestone starts the two independent PostgreSQL 16 instances and Keycloak 26.8.2. Keycloak imports the project realm definition on first startup.
 
 ## Prerequisites
 
@@ -47,6 +47,19 @@ When Keycloak is healthy, open:
 
 The PostgreSQL ports are bound to loopback, so they are not exposed on external network interfaces. Containers communicate over private Compose bridge networks using service DNS names. The Keycloak database is only attached to `keycloak-network`; the application database is only attached to `app-network`. The future Spring Boot service will join both networks.
 
+## Realm import
+
+The file `infra/keycloak/realm/platform-realm.json` is mounted read-only into Keycloak's import directory. The `--import-realm` option imports the `platform` realm when it does not already exist.
+
+Realm import is not an ongoing synchronization mechanism: changing the JSON file does not overwrite an existing realm. For a clean local re-import, stop the stack and remove the Keycloak database volume only if you are willing to lose all Keycloak data:
+
+```bash
+docker compose down
+docker volume ls
+```
+
+Identify the project Keycloak volume before removing it. Do not remove the application database volume. Then start the stack again.
+
 ## Stop without deleting data
 
 ```bash
@@ -55,7 +68,7 @@ docker compose down
 
 Named volumes persist across container recreation and ordinary `docker compose down`.
 
-**Destructive reset:** `docker compose down -v` deletes both database volumes and all data stored in them. Use it only when you intentionally want a clean database reset.
+**Destructive reset:** `docker compose down -v` deletes both database volumes and all data stored in them. Use it only when you intentionally want a clean reset of both databases.
 
 ## Important development-only note
 
