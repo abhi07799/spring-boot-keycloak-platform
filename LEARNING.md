@@ -232,3 +232,42 @@ Swagger UI is a browser-based public OAuth client. PKCE protects the authorizati
 
 **Verification**
 Springdoc's documented Swagger UI OAuth properties and Keycloak's OIDC authorization/token endpoint paths were checked. The OpenAPI authorization/token endpoint configuration has focused unit tests. The ping handler is annotated as public in the OpenAPI description. Maven, Docker, and a running Keycloak/browser environment are unavailable here; compilation, tests, redirect URI matching, PKCE exchange, and end-to-end API invocation must be verified locally.
+
+
+## Step 3.3 — Keycloak Admin REST API client
+
+**What we implemented**
+- Added Spring Security OAuth2 Client support alongside the existing resource-server support.
+- Configured a separate confidential platform-admin-service client registration using the Client Credentials grant and HTTP Basic client authentication.
+- Added an OAuth2AuthorizedClientManager backed by the authorized-client service to obtain and reuse service-account access tokens.
+- Added a typed Keycloak Admin REST API client for creating users and assigning client roles.
+- Role assignment resolves the Keycloak internal client UUID and role representation before posting the user role mapping.
+- Added unit tests for token acquisition failure/success, user creation response handling, and the client-role assignment request sequence.
+- Documented secret provisioning, local/container base URLs, and least-privilege service-account permissions.
+
+**Why**
+The backend needs a server-to-server identity to perform privileged identity lifecycle operations. A confidential service account separates these operations from end-user tokens and from the public Swagger client. The access token is obtained through the OAuth2 Client Credentials grant and is never exposed to a browser.
+
+**Important concepts**
+- **Client Credentials grant:** the backend authenticates as its own service account; there is no end-user session.
+- **Authorized client manager:** Spring Security obtains and reuses the client access token, handling token expiry and re-authorization.
+- **Admin REST API:** Keycloak's administrative endpoints require a bearer token with sufficient service-account permissions.
+- **Client UUID vs. client ID:** Admin REST role-mapping endpoints use Keycloak's internal client UUID, not the human-readable client ID. The client resolves this before assigning a role.
+- **Least privilege:** grant only the realm-management permissions needed for the specific user and role operations; do not grant realm-admin.
+
+**Files changed**
+- pom.xml
+- src/main/resources/application.yaml
+- src/main/java/io/github/abhi07799/platform/identity/infrastructure/keycloak/KeycloakAdminOAuth2Configuration.java
+- src/main/java/io/github/abhi07799/platform/identity/infrastructure/keycloak/KeycloakAdminTokenProvider.java
+- src/main/java/io/github/abhi07799/platform/identity/infrastructure/keycloak/KeycloakAdminClient.java
+- src/main/java/io/github/abhi07799/platform/identity/infrastructure/keycloak/KeycloakUserRepresentation.java
+- src/test/java/io/github/abhi07799/platform/identity/infrastructure/keycloak/KeycloakAdminTokenProviderTest.java
+- src/test/java/io/github/abhi07799/platform/identity/infrastructure/keycloak/KeycloakAdminClientTest.java
+- docs/keycloak/README.md
+- docs/security/README.md
+- README.md
+- LEARNING.md
+
+**Verification**
+Dependency coordinates were checked against the Spring Boot 4.1.2 managed dependency list. Keycloak Client Credentials and Admin REST API endpoint behavior were checked against Keycloak 26.8 documentation. Unit tests were added but cannot be executed here because Maven is not installed. A live Keycloak test is also pending; confirm the actual role-mapping permissions with the local Keycloak 26.8.2 realm and its service-account configuration.
