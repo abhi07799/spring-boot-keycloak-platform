@@ -62,9 +62,16 @@ Migration V1 creates `user_profiles` with:
 
 No password, password hash, or Keycloak internal database field is stored in the application database. The Keycloak subject is the stable link between the identity and the application profile.
 
-## Verify the migration
+## Administrative data and coordination tables
 
-Start the app with the datasource environment variables set. On successful startup, Flyway applies V1 and Hibernate validates the mapped entity against the resulting schema.
+- V2 adds the mirrored `user_profiles.enabled` flag.
+- V3 creates the append-only `admin_audit_events` table for provisioning and account-status actions.
+- V4 extends audit records with previous/new application roles and adds the `USER_ROLE_CHANGED` event type.
+- V5 creates and seeds the singleton `admin_role_change_lock` row. Role-management transactions lock this row with `SELECT ... FOR UPDATE` while checking the last enabled ADMIN and writing the audit event, serializing role changes across application instances.
+
+## Verify the migrations
+
+Start the app with the datasource environment variables set. On successful startup, Flyway applies all pending migrations and Hibernate validates the mapped entities against the resulting schema.
 
 Inspect the database:
 
