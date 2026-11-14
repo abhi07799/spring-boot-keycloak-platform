@@ -47,9 +47,9 @@ public class AdminUserRoleService {
                 keycloakAdminClient.restoreClientRole(
                         context.targetKeycloakSubjectId, "platform-api", context.previousRole);
             } catch (RuntimeException compensationFailure) {
-                log.error("Role update compensation failed for application user id {}", userId,
-                        compensationFailure);
-                throw new AdminUserRoleCompensationException(compensationFailure);
+                failure.addSuppressed(compensationFailure);
+                log.error("Role update compensation failed for application user id {}", userId, failure);
+                throw new AdminUserRoleCompensationException(failure);
             }
             throw new AdminUserRoleUpdateException(failure);
         }
