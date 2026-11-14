@@ -19,4 +19,11 @@ public class UserProfileService {
         return userProfileRepository.findByKeycloakSubjectId(subjectId)
                 .orElseThrow(UserProfileNotFoundException::new);
     }
+
+    @Transactional
+    public UserProfile updateProfile(String subjectId, String fullName, String mobileNumber) {
+        UserProfile profile = getByKeycloakSubjectId(subjectId);
+        profile.updateProfileDetails(fullName.trim(), mobileNumber.trim());
+        return profile;
+    }
 }
