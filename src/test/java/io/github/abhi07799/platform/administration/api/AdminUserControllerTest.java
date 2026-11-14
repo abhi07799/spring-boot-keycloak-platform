@@ -4,6 +4,7 @@ import io.github.abhi07799.platform.administration.application.AdminUserDirector
 import io.github.abhi07799.platform.administration.application.AdminUserProvisioningService;
 import io.github.abhi07799.platform.administration.application.AdminUserStatusService;
 import io.github.abhi07799.platform.administration.application.AdminUserRoleService;
+import io.github.abhi07799.platform.administration.api.UpdateAdminUserRoleRequest;
 import io.github.abhi07799.platform.user.api.UserProfileResponse;
 import io.github.abhi07799.platform.identity.api.RegistrationExceptionHandler;
 import io.github.abhi07799.platform.security.KeycloakRoleConverter;
@@ -68,6 +69,8 @@ class AdminUserControllerTest {
                 .andExpect(status().isUnauthorized());
         mockMvc.perform(patch("/api/v1/admin/users/{userId}/status", UUID.fromString("f7f5d5b5-1f75-4a39-9c51-9a5d7b3d5f11")))
                 .andExpect(status().isUnauthorized());
+        mockMvc.perform(patch("/api/v1/admin/users/{userId}/role", UUID.fromString("f7f5d5b5-1f75-4a39-9c51-9a5d7b3d5f11")))
+                .andExpect(status().isUnauthorized());
     }
 
     @Test
@@ -78,6 +81,10 @@ class AdminUserControllerTest {
 
         mockMvc.perform(get("/api/v1/admin/users")
                         .with(jwt().authorities(new SimpleGrantedAuthority("ROLE_STAFF"))))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(patch("/api/v1/admin/users/{userId}/role", UUID.fromString("f7f5d5b5-1f75-4a39-9c51-9a5d7b3d5f11"))
+                        .with(jwt().authorities(new SimpleGrantedAuthority("ROLE_STAFF")))
+                        .contentType("application/json").content("{\"role\":\"STAFF\"}"))
                 .andExpect(status().isForbidden());
     }
 
@@ -208,6 +215,40 @@ class AdminUserControllerTest {
                                   "password": "a-long-test-password",
                                   "role": "USER"
                                 }
+                                """))
+                .andExpect(status().isBadRequest());
+    }
+
+
+    @Test
+    void allowsAdminToChangeAUserRoleAndUsesJwtActor() throws Exception {
+        UUID userId = UUID.fromString("f7f5d5b5-1f75-4a39-9c51-9a5d7b3d5f11");
+        when(roleService.updateRole(userId, UpdateAdminUserRoleRequest.Role.STAFF, "admin-subject"))
+                .thenReturn(new AdminUserRoleResponse(userId, "USER", "STAFF"));
+
+        mockMvc.perform(patch("/api/v1/admin/users/{userId}/role", userId)
+                        .with(jwt().jwt(token -> token.subject("admin-subject"))
+                                .authorities(new SimpleGrantedAuthority("ROLE_ADMIN")))
+                        .contentType("application/json")
+                        .content("""
+                                {"role":"STAFF"}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.userId").value(userId.toString()))
+                .andExpect(jsonPath("$.previousRole").value("USER"))
+                .andExpect(jsonPath("$.newRole").value("STAFF"));
+
+        verify(roleService).updateRole(userId, UpdateAdminUserRoleRequest.Role.STAFF, "admin-subject");
+    }
+
+    @Test
+    void rejectsUnknownRoleValues() throws Exception {
+        UUID userId = UUID.fromString("f7f5d5b5-1f75-4a39-9c51-9a5d7b3d5f11");
+        mockMvc.perform(patch("/api/v1/admin/users/{userId}/role", userId)
+                        .with(jwt().authorities(new SimpleGrantedAuthority("ROLE_ADMIN")))
+                        .contentType("application/json")
+                        .content("""
+                                {"role":"SUPER_ADMIN"}
                                 """))
                 .andExpect(status().isBadRequest());
     }
