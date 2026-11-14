@@ -10,6 +10,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestClientException;
+import org.springframework.web.client.RestClientResponseException;
 
 import java.util.List;
 import java.util.Locale;
@@ -51,7 +53,19 @@ public class RegistrationService {
                 List.of(new KeycloakUserRepresentation.CredentialRepresentation(
                         "password", request.password(), false)));
 
-        String keycloakUserId = keycloakAdminClient.createUser(keycloakUser);
+        String keycloakUserId;
+        try {
+            keycloakUserId = keycloakAdminClient.createUser(keycloakUser);
+        } catch (RestClientResponseException exception) {
+            if (exception.getStatusCode().value() == 409) {
+                throw new EmailAlreadyRegisteredException();
+            }
+            throw new RegistrationFailedException(
+                    "The identity provider could not create the account. Please try again later.", exception);
+        } catch (RestClientException exception) {
+            throw new RegistrationFailedException(
+                    "The identity provider could not create the account. Please try again later.", exception);
+        }
 
         try {
             keycloakAdminClient.assignClientRole(keycloakUserId, API_CLIENT_ID, DEFAULT_ROLE);
