@@ -40,7 +40,8 @@ The backend uses KEYCLOAK_ADMIN_BASE_URL=http://localhost:8081 and realm platfor
 - Registration endpoint: `POST http://localhost:8080/api/v1/auth/register` (public; assigns only `USER`).
 - Current user profile: `GET http://localhost:8080/api/v1/users/me` (authenticated; resolves the profile from the JWT subject).
 - Update current user profile: `PUT http://localhost:8080/api/v1/users/me` (authenticated; updates full name and mobile number only).
-- Admin user directory: `GET http://localhost:8080/api/v1/admin/users` (ADMIN only; paginated, default 20 users, maximum 100 per page).\n- Admin provisioning: `POST http://localhost:8080/api/v1/admin/users` (ADMIN only; creates `STAFF` or `ADMIN`).
+- Admin user directory: `GET http://localhost:8080/api/v1/admin/users` (ADMIN only; paginated, default 20 users, maximum 100 per page).
+- Admin provisioning: `POST http://localhost:8080/api/v1/admin/users` (ADMIN only; creates `STAFF` or `ADMIN`).
 - Ping endpoint: http://localhost:8080/api/v1/ping (public)
 - Swagger UI: http://localhost:8080/swagger-ui.html (Keycloak OAuth2 + PKCE)
 - OpenAPI JSON: http://localhost:8080/v3/api-docs
