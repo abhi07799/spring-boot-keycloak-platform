@@ -621,7 +621,7 @@ Tests were added but not executed because Maven is unavailable in this environme
 
 **What we implemented**
 - Enabled Keycloak realm settings `verifyEmail=true` and `resetPasswordAllowed=true`. New registrations remain `emailVerified=false`.
-- After persisting a newly registered profile, the backend asks Keycloak to send its built-in email-verification action link. If SMTP delivery fails, account creation remains successful and the user can request a resend.
+- After persisting a newly registered or ADMIN-provisioned profile, the backend asks Keycloak to send its built-in email-verification action link. If SMTP delivery fails, account creation remains successful and the user can request a resend.
 - Added public `POST /api/v1/auth/password/forgot`. It requests Keycloak's built-in `UPDATE_PASSWORD` action email; the application never receives or stores a replacement password.
 - Added public `POST /api/v1/auth/email/verification/resend`. It sends another verification email only for an enabled account whose Keycloak email is not yet verified.
 - Both recovery endpoints return the same generic HTTP 202 message for unknown, disabled, and eligible email addresses. Provider failures are logged against the application profile ID without logging the email address, and are not disclosed to the caller.
