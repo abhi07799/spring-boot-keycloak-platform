@@ -198,3 +198,37 @@ A valid signature alone is not enough: an API should also reject tokens issued b
 
 **Verification**
 The security rules and tests were statically reviewed against the Spring Security resource-server model. Maven, Docker, and a running Keycloak instance are unavailable in this execution environment; compilation, automated test execution, token signature validation, and live issuer/audience checks must be run locally.
+
+
+## Step 3.2 — Swagger UI OAuth2 Authorization Code with PKCE
+
+**What we implemented**
+- Configured Swagger UI with the public Keycloak client ID `platform-swagger`.
+- Enabled Authorization Code with PKCE S256 and left the client secret unset.
+- Added an OpenAPI OAuth2 authorization-code security scheme whose authorization and token endpoints are derived from the configured Keycloak realm issuer.
+- Applied the OAuth2 security requirement to API operations and explicitly marked the public ping operation as unauthenticated in the OpenAPI document.
+- Disabled authorization persistence in Swagger UI.
+- Documented the exact local redirect URI, Keycloak client settings, and browser-based verification steps.
+
+**Why**
+Swagger UI is a browser-based public OAuth client. PKCE protects the authorization-code exchange without placing a client secret in the browser. The API still independently validates the access token; Swagger UI configuration does not replace backend security.
+
+**Important concepts**
+- **Authorization Code flow:** the browser is redirected to Keycloak, receives a short-lived authorization code, and exchanges it for tokens.
+- **PKCE S256:** Swagger UI creates a verifier and sends its SHA-256 challenge; the verifier is required at token exchange.
+- **Redirect URI:** the exact callback URL registered on the Keycloak client; mismatches are rejected.
+- **OpenAPI security scheme:** tells Swagger UI which OAuth flow and endpoints to use.
+- **Public client:** a browser cannot keep a client secret confidential, so the Swagger client has no secret.
+
+**Files changed**
+- `src/main/resources/application.yaml`
+- `src/main/java/io/github/abhi07799/platform/system/config/OpenApiConfig.java`
+- `src/main/java/io/github/abhi07799/platform/system/api/SystemController.java`
+- `src/test/java/io/github/abhi07799/platform/system/config/OpenApiConfigTest.java`
+- `docs/keycloak/README.md`
+- `docs/security/README.md`
+- `README.md`
+- `LEARNING.md`
+
+**Verification**
+Springdoc's documented Swagger UI OAuth properties and Keycloak's OIDC authorization/token endpoint paths were checked. The OpenAPI authorization/token endpoint configuration has focused unit tests. The ping handler is annotated as public in the OpenAPI description. Maven, Docker, and a running Keycloak/browser environment are unavailable here; compilation, tests, redirect URI matching, PKCE exchange, and end-to-end API invocation must be verified locally.

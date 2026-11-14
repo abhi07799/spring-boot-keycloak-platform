@@ -35,9 +35,11 @@ The backend is a Maven-based Spring MVC application secured as a stateless OAuth
 5. Run `mvn spring-boot:run`.
 
 - Ping endpoint: http://localhost:8080/api/v1/ping (public)
-- Swagger UI: http://localhost:8080/swagger-ui.html
+- Swagger UI: http://localhost:8080/swagger-ui.html (Keycloak OAuth2 + PKCE)
 - OpenAPI JSON: http://localhost:8080/v3/api-docs
 - Actuator health: http://localhost:8080/actuator/health
+
+In Swagger UI, select **Authorize**, sign in through the `platform` Keycloak realm, and authorize using the `platform-swagger` public client. The access token is attached to secured API calls. The Keycloak redirect URI and browser origin must match the address used to open Swagger UI.
 
 Flyway applies versioned migrations at startup. Hibernate validates the resulting schema. The backend connects to the application database only; Keycloak retains its independent database.
 
@@ -63,7 +65,7 @@ See [Keycloak configuration](docs/keycloak/README.md), [security setup](docs/sec
 - `main`: stable baseline.
 - `develop`: integration branch.
 - `step1/initial-project-setup`: initial repository baseline.
-- Later milestones use numbered prefixes such as `step2.1/`, `step2.2/`, `step2.3/`, `step2.4/`, and `step3.1/`.
+- Later milestones use numbered prefixes such as `step2.1/`, `step2.2/`, `step2.3/`, `step2.4/`, `step3.1/`, and `step3.2/`.
 
 ## Learning journal
 See [LEARNING.md](LEARNING.md).

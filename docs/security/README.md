@@ -28,6 +28,19 @@ Public:
 
 All other requests require a valid bearer access token. The API is stateless; HTTP Basic, form login, and CSRF are disabled for this bearer-token-only API configuration. Role-specific endpoint authorization will be added alongside the corresponding business APIs.
 
+## Swagger OAuth2 login
+
+Swagger UI uses the public Keycloak client `platform-swagger` with OAuth 2.0 Authorization Code and PKCE S256. The OpenAPI document declares the OAuth2 authorization-code flow using the configured Keycloak realm issuer. Swagger UI sends the resulting access token as a bearer token when invoking secured operations.
+
+Local settings:
+- Swagger UI: `http://localhost:8080/swagger-ui.html`
+- Redirect URI: `http://localhost:8080/swagger-ui/oauth2-redirect.html`
+- Client ID: `platform-swagger`
+- PKCE: enabled (S256)
+- Client secret: none; this is a public client.
+
+The ping operation is marked public in the OpenAPI description. Secured operations inherit the OAuth2 security requirement. Do not enable authorization persistence in the browser, add a client secret, or use implicit/password grants.
+
 ## Local configuration
 
 The default issuer is configured in `application.yaml`. Override it when necessary:
@@ -42,8 +55,10 @@ PowerShell:
 $env:KEYCLOAK_ISSUER_URI = "http://localhost:8081/realms/platform"
 ```
 
+If Swagger is opened from another host or port, set `SWAGGER_OAUTH2_REDIRECT_URL` to the matching Swagger OAuth redirect URI and update the `platform-swagger` client's redirect URI and web origin in Keycloak. Exact matches are required; do not use wildcards.
+
 Start Keycloak using the repository's Compose setup before making authenticated requests. The Keycloak realm must have been imported, and the access token must include `platform-api` in `aud`. A token missing that audience is rejected even if its signature and issuer are otherwise valid.
 
 ## Verification
 
-The automated tests cover public ping access, unauthenticated rejection for other API paths, and strict client-role mapping. Run `mvn test` locally with JDK 21 and Maven. Live JWT verification additionally requires the Compose Keycloak service and a token issued by the `platform` realm.
+The automated tests cover the OpenAPI authorization/token endpoint configuration and issuer URL normalization. The ping handler is annotated as public in the OpenAPI description. Run `mvn test` locally with JDK 21 and Maven. End-to-end login, redirect URI matching, PKCE exchange, role scopes, and live API invocation require the Compose Keycloak service and a browser.

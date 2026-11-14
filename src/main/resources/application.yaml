@@ -43,6 +43,13 @@ springdoc:
     path: /v3/api-docs
   swagger-ui:
     path: /swagger-ui.html
+    oauth2-redirect-url: ${SWAGGER_OAUTH2_REDIRECT_URL:http://localhost:8080/swagger-ui/oauth2-redirect.html}
+    oauth:
+      client-id: platform-swagger
+      use-pkce-with-authorization-code-grant: true
+      scopes:
+        - openid
+    persist-authorization: false
 
 management:
   endpoints:
