@@ -81,7 +81,8 @@ class AdminUserProvisioningServiceTest {
         service.provision(request(AdminUserProvisioningRequest.ProvisionedRole.ADMIN), "admin-subject");
 
         verify(keycloakAdminClient).assignClientRole("keycloak-user-123", "platform-api", "ADMIN");
-        verify(roleChangeLockService).withRoleChangeLock(org.mockito.ArgumentMatchers.any());
+        verify(roleChangeLockService).withRoleChangeLock(
+                org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any());
     }
 
     @Test
