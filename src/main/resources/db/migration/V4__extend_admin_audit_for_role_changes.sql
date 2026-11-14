@@ -31,7 +31,9 @@ ALTER TABLE admin_audit_events
             AND assigned_role IS NULL
             AND previous_enabled IS NULL
             AND new_enabled IS NULL
+            AND previous_role IS NOT NULL
             AND previous_role IN ('USER', 'STAFF', 'ADMIN')
+            AND new_role IS NOT NULL
             AND new_role IN ('USER', 'STAFF', 'ADMIN')
             AND previous_role <> new_role)
     );
