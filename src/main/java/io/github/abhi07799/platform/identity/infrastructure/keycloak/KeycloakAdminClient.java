@@ -145,10 +145,10 @@ public class KeycloakAdminClient {
                 .header(HttpHeaders.AUTHORIZATION, bearerToken())
                 .retrieve()
                 .body(new ParameterizedTypeReference<>() { });
-        if (user == null || !(user.get("emailVerified") instanceof Boolean emailVerified)) {
-            throw new IllegalStateException("Keycloak user representation did not include emailVerified: " + userId);
+        if (user == null || user.isEmpty()) {
+            throw new IllegalStateException("Keycloak user representation was not found: " + userId);
         }
-        return emailVerified;
+        return Boolean.TRUE.equals(user.get("emailVerified"));
     }
 
     public void deleteUser(String userId) {
