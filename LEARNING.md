@@ -591,3 +591,28 @@ Application roles are client roles owned by `platform-api`. Updating a role must
 
 **Verification**
 Tests were added but not executed because Maven is unavailable in this environment. Run `mvn test` with JDK 21 and Maven. Apply Flyway V4, verify the service account can read client role mappings and role members, then test USER↔STAFF, STAFF↔ADMIN, last-admin protection, self-role protection, and audit rollback against Keycloak/PostgreSQL.
+
+## Step 3.13 — Refresh token boundaries and session revocation
+
+**What we implemented**
+- Added authenticated POST /api/v1/auth/logout, which derives the current user only from the validated JWT subject.
+- Added ADMIN-only POST /api/v1/admin/users/{userId}/logout to terminate all sessions for a selected application profile.
+- Both endpoints call Keycloak's Admin REST API user logout operation. This is a user-wide logout: it terminates all active Keycloak sessions for the account, not just the browser/device that sent the request.
+- Added Flyway V6 and the USER_SESSIONS_REVOKED audit action. Events record the actor JWT subject, target profile ID, and timestamp without storing tokens or profile PII.
+- On successful Keycloak logout, the application advances user_profiles.authorization_updated_at. The JWT validator checks this marker on every request, so previously issued access tokens are rejected immediately after the audit transaction commits.
+- Serialized session revocation with role changes, ADMIN provisioning, and account-status changes using the existing PostgreSQL session-level advisory lock.
+- Added tests for Keycloak logout invocation, self-logout subject derivation, ADMIN authorization, audit persistence, and token-revocation timestamp updates.
+- Documented that refresh-token exchanges belong directly to the OAuth client and are not proxied or persisted by this API.
+
+**Why**
+The API validates JWTs locally and does not maintain server-side HTTP sessions. Ending a Keycloak session prevents its refresh token from being used to continue that session, but a self-contained access token can otherwise remain locally valid until expiry. The application authorization timestamp provides an immediate local cutoff for access tokens issued before logout. The ADMIN endpoint supports terminating a compromised or departed user's sessions.
+
+**Important concepts**
+- **Refresh-token ownership:** an OAuth client exchanges its own refresh token directly with Keycloak's token endpoint. Refresh tokens are credentials and must not be sent to application API endpoints or written to logs.
+- **User-wide logout:** Keycloak's Admin REST user logout endpoint removes all active sessions for the specified user. It is not a single-device logout operation.
+- **Immediate access-token cutoff:** authorization_updated_at is compared with JWT iat during every bearer-token validation. A token issued before the cutoff is rejected even if its exp has not elapsed.
+- **Cross-system failure:** Keycloak session termination and the PostgreSQL audit/cutoff transaction are not one distributed transaction. If Keycloak succeeds but the local transaction fails, the API returns an error and requires retry/reconciliation; the Keycloak logout cannot be rolled back.
+- **No refresh-token proxy:** the backend does not accept, issue, proxy, or persist refresh tokens. The repository has no frontend token store; Swagger UI must re-authorize when its access token expires.
+
+**Verification**
+Tests were added but not executed because Maven is unavailable in this environment. Run mvn test with JDK 21 and Maven, apply Flyway V6, then verify self logout, ADMIN force logout, audit history, and rejection of a previously issued access token against live Keycloak 26.8.2/PostgreSQL.

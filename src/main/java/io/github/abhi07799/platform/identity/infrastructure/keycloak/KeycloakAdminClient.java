@@ -101,6 +101,15 @@ public class KeycloakAdminClient {
         return previousEnabled;
     }
 
+    /** Terminates every active Keycloak session for the specified user. */
+    public void logoutUser(String userId) {
+        restClient.post()
+                .uri("/admin/realms/{realm}/users/{userId}/logout", realm, userId)
+                .header(HttpHeaders.AUTHORIZATION, bearerToken())
+                .retrieve()
+                .toBodilessEntity();
+    }
+
     public void deleteUser(String userId) {
         restClient.delete()
                 .uri("/admin/realms/{realm}/users/{userId}", realm, userId)

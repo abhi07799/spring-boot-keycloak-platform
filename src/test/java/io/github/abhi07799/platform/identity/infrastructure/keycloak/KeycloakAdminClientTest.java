@@ -56,6 +56,17 @@ class KeycloakAdminClientTest {
     }
 
     @Test
+    void logsOutAllSessionsForTheSpecifiedKeycloakUser() {
+        server.expect(requestTo("http://localhost:8081/admin/realms/platform/users/user-123/logout"))
+                .andExpect(method(HttpMethod.POST))
+                .andExpect(header("Authorization", "Bearer service-token"))
+                .andRespond(withStatus(HttpStatus.NO_CONTENT));
+
+        client.logoutUser("user-123");
+        server.verify();
+    }
+
+    @Test
     void deletesUserForRegistrationCompensation() {
         server.expect(requestTo("http://localhost:8081/admin/realms/platform/users/user-123"))
                 .andExpect(method(HttpMethod.DELETE))

@@ -9,6 +9,9 @@ import io.github.abhi07799.platform.administration.application.LastAdminProtecti
 import io.github.abhi07799.platform.administration.application.KeycloakRoleUpdateException;
 import io.github.abhi07799.platform.administration.application.AdminUserRoleUpdateException;
 import io.github.abhi07799.platform.administration.application.AdminUserRoleCompensationException;
+import io.github.abhi07799.platform.administration.application.KeycloakSessionRevocationException;
+import io.github.abhi07799.platform.administration.application.SessionRevocationPersistenceException;
+import io.github.abhi07799.platform.administration.application.SessionRevocationUnavailableException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
@@ -62,6 +65,24 @@ public class AdminUserExceptionHandler {
     ResponseEntity<ProblemDetail> handleRoleCompensationFailure(AdminUserRoleCompensationException exception) {
         return problem(HttpStatus.INTERNAL_SERVER_ERROR,
                 "The account role update and compensation failed; operational reconciliation is required.");
+    }
+
+    @ExceptionHandler(KeycloakSessionRevocationException.class)
+    ResponseEntity<ProblemDetail> handleKeycloakSessionRevocationFailure(KeycloakSessionRevocationException exception) {
+        return problem(HttpStatus.BAD_GATEWAY,
+                "The identity provider could not terminate the user's sessions. Please try again later.");
+    }
+
+    @ExceptionHandler(SessionRevocationPersistenceException.class)
+    ResponseEntity<ProblemDetail> handleSessionRevocationPersistenceFailure(SessionRevocationPersistenceException exception) {
+        return problem(HttpStatus.INTERNAL_SERVER_ERROR,
+                "Keycloak sessions were terminated, but local token revocation could not be persisted. Retry the logout request.");
+    }
+
+    @ExceptionHandler(SessionRevocationUnavailableException.class)
+    ResponseEntity<ProblemDetail> handleSessionRevocationUnavailable(SessionRevocationUnavailableException exception) {
+        return problem(HttpStatus.SERVICE_UNAVAILABLE,
+                "Session revocation is temporarily unavailable. Please retry the logout request.");
     }
 
     private ResponseEntity<ProblemDetail> problem(HttpStatus status, String detail) {

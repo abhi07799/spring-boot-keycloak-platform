@@ -71,6 +71,23 @@ class AdminAuditPersistenceServiceTest {
 
 
     @Test
+    void recordsSessionRevocationAndAdvancesAuthorizationTimestamp() {
+        UserProfile profile = new UserProfile("target-subject", "Test Person",
+                "person@example.com", "+919876543210");
+        when(userProfileRepository.findById(USER_ID)).thenReturn(Optional.of(profile));
+        when(userProfileRepository.saveAndFlush(profile)).thenReturn(profile);
+
+        service.recordSessionRevocation(USER_ID, "actor-subject");
+
+        assertThat(profile.getAuthorizationUpdatedAt()).isAfter(java.time.Instant.EPOCH);
+        ArgumentCaptor<AdminAuditEvent> event = ArgumentCaptor.forClass(AdminAuditEvent.class);
+        verify(auditEventRepository).saveAndFlush(event.capture());
+        assertThat(event.getValue().getAction()).isEqualTo("USER_SESSIONS_REVOKED");
+        assertThat(event.getValue().getActorSubjectId()).isEqualTo("actor-subject");
+        assertThat(event.getValue().getTargetUserId()).isEqualTo(USER_ID);
+    }
+
+    @Test
     void recordsPreviousAndNewApplicationRoles() {
         service.recordRoleChange(USER_ID, "admin-subject", "USER", "STAFF");
 

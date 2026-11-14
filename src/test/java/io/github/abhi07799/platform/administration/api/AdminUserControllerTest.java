@@ -4,6 +4,7 @@ import io.github.abhi07799.platform.administration.application.AdminUserDirector
 import io.github.abhi07799.platform.administration.application.AdminUserProvisioningService;
 import io.github.abhi07799.platform.administration.application.AdminUserStatusService;
 import io.github.abhi07799.platform.administration.application.AdminUserRoleService;
+import io.github.abhi07799.platform.administration.application.AdminUserSessionService;
 import io.github.abhi07799.platform.administration.api.UpdateAdminUserRoleRequest;
 import io.github.abhi07799.platform.user.api.UserProfileResponse;
 import io.github.abhi07799.platform.identity.api.RegistrationExceptionHandler;
@@ -61,6 +62,9 @@ class AdminUserControllerTest {
     @Autowired
     private AdminUserRoleService roleService;
 
+    @Autowired
+    private AdminUserSessionService sessionService;
+
     @Test
     void rejectsUnauthenticatedRequests() throws Exception {
         mockMvc.perform(post("/api/v1/admin/users"))
@@ -70,6 +74,8 @@ class AdminUserControllerTest {
         mockMvc.perform(patch("/api/v1/admin/users/{userId}/status", UUID.fromString("f7f5d5b5-1f75-4a39-9c51-9a5d7b3d5f11")))
                 .andExpect(status().isUnauthorized());
         mockMvc.perform(patch("/api/v1/admin/users/{userId}/role", UUID.fromString("f7f5d5b5-1f75-4a39-9c51-9a5d7b3d5f11")))
+                .andExpect(status().isUnauthorized());
+        mockMvc.perform(post("/api/v1/admin/users/{userId}/logout", UUID.fromString("f7f5d5b5-1f75-4a39-9c51-9a5d7b3d5f11")))
                 .andExpect(status().isUnauthorized());
     }
 
@@ -85,6 +91,9 @@ class AdminUserControllerTest {
         mockMvc.perform(patch("/api/v1/admin/users/{userId}/role", UUID.fromString("f7f5d5b5-1f75-4a39-9c51-9a5d7b3d5f11"))
                         .with(jwt().authorities(new SimpleGrantedAuthority("ROLE_STAFF")))
                         .contentType("application/json").content("{\"role\":\"STAFF\"}"))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(post("/api/v1/admin/users/{userId}/logout", UUID.fromString("f7f5d5b5-1f75-4a39-9c51-9a5d7b3d5f11"))
+                        .with(jwt().authorities(new SimpleGrantedAuthority("ROLE_STAFF"))))
                 .andExpect(status().isForbidden());
     }
 
@@ -178,6 +187,18 @@ class AdminUserControllerTest {
                         .contentType("application/json")
                         .content("{}"))
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void allowsAdminToTerminateAllSessionsForTargetUser() throws Exception {
+        UUID userId = UUID.fromString("f7f5d5b5-1f75-4a39-9c51-9a5d7b3d5f11");
+
+        mockMvc.perform(post("/api/v1/admin/users/{userId}/logout", userId)
+                        .with(jwt().jwt(token -> token.subject("admin-subject"))
+                                .authorities(new SimpleGrantedAuthority("ROLE_ADMIN"))))
+                .andExpect(status().isNoContent());
+
+        verify(sessionService).logoutUser(userId, "admin-subject");
     }
 
     @Test
@@ -278,6 +299,12 @@ class AdminUserControllerTest {
         @Primary
         AdminUserRoleService roleService() {
             return mock(AdminUserRoleService.class);
+        }
+
+        @Bean
+        @Primary
+        AdminUserSessionService sessionService() {
+            return mock(AdminUserSessionService.class);
         }
 
         @Bean

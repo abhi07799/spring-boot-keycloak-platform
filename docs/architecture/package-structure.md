@@ -9,7 +9,7 @@ io.github.abhi07799.platform
 ├── system/
 │   └── api/                # Operational endpoints (for example, ping)
 ├── identity/
-│   ├── api/                # Registration endpoint and request/response contracts
+│   ├── api/                # Registration, authenticated logout, and request/response contracts
 │   ├── application/        # Registration use case and orchestration
 │   └── infrastructure/     # Keycloak Admin REST API integration
 ├── user/
@@ -18,8 +18,8 @@ io.github.abhi07799.platform
 │   └── infrastructure/
 │       └── persistence/    # Application profile entity and repository
 └── administration/
-    ├── api/                # ADMIN-only user directory, provisioning, account status, role management, and audit endpoints
-    ├── application/        # User listing, provisioning, account status, role management, and audit workflows
+    ├── api/                # ADMIN-only user directory, provisioning, account status, role management, session revocation, and audit endpoints
+    ├── application/        # User listing, provisioning, account status, role management, session revocation, and audit workflows
     └── infrastructure/
         └── persistence/    # Append-only administrative audit events and repository
 ```
@@ -30,6 +30,7 @@ io.github.abhi07799.platform
 - Keep domain rules inside the owning feature; avoid cross-feature entity access.
 - Share code only when it is genuinely generic and stable.
 - Keycloak credentials remain in Keycloak. The `user` feature stores application profile data and the Keycloak subject identifier only.
-- The current-user read and update endpoints derive identity exclusively from the validated JWT subject; they do not accept a user ID from the request.
+- The current-user read, update, and logout endpoints derive identity exclusively from the validated JWT subject; they do not accept a user ID from the request.
+- Session revocation is coordinated through the administration application service because it must share the lifecycle lock and append-only audit history.
 - Self-service profile updates are limited to full name and mobile number. Email and credentials remain managed by Keycloak.
 - Administrative user listing, provisioning, and account status management are protected by `ROLE_ADMIN`. The directory is paginated with a bounded page size; provisioning accepts only `STAFF` and `ADMIN`. Public registration remains hard-coded to `USER`.
