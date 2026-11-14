@@ -12,7 +12,7 @@ io.github.abhi07799.platform
 │   ├── api/                # Registration endpoint and request/response contracts
 │   ├── application/        # Registration use case and orchestration
 │   └── infrastructure/     # Keycloak Admin REST API integration
-├── user/                   # Application user profile and registration
+├── user/                   # Application user profile and persistence
 └── administration/         # Privileged user provisioning and admin use cases
 ```
 
