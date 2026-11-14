@@ -507,3 +507,37 @@ Keycloak remains the identity provider and controls whether the account can auth
 
 **Verification**
 Tests were added but not executed because Maven is not installed in this execution environment. Run `mvn test` with JDK 21 and Maven. Apply Flyway migration V2 and verify disable/re-enable against the local Keycloak 26.8.2 instance. Existing self-contained access tokens remain valid until expiry unless a separate revocation/introspection strategy is introduced.
+
+
+## Step 3.10 — Immediate disabled-account token enforcement
+
+**What we implemented**
+- Added `AccountStatusJwtValidator` to the JWT validation pipeline.
+- Every bearer-token authentication now looks up the JWT `sub` in `user_profiles`.
+- Tokens are rejected as invalid when the subject is missing, no application profile exists, or the profile has `enabled = false`.
+- Kept existing signature, issuer, expiry/not-before, and `platform-api` audience validation in place.
+- Added unit tests for enabled, disabled, missing-profile, missing-subject, and repeated-validation cases.
+- Updated MVC security-slice test configurations to provide a mocked profile repository.
+
+**Why**
+Keycloak account deactivation prevents future authentication and refresh, but self-contained JWTs may otherwise remain usable until expiration. The resource server now consults the application's enabled-state mirror whenever a bearer token is authenticated. Since no status cache is introduced, a completed deactivation is enforced on the next protected API request, even when the caller presents an older token.
+
+**Important concepts**
+- **JWT validation vs. authorization:** cryptographic and claim validation establish token authenticity; the additional account-status validator confirms the identity remains enabled in the application.
+- **Fail closed:** if the application database cannot confirm the profile status, the request cannot be authenticated.
+- **Per-request lookup:** every bearer-token authentication performs a profile lookup. The unique index on `keycloak_subject_id` supports this query. This adds a database dependency to authenticated request processing; consider a carefully designed revocation/cache strategy only if performance requires it, with an explicit maximum revocation delay.
+- **Token lifecycle:** disabling the Keycloak identity blocks new logins/refreshes; the resource server status check also rejects already-issued access tokens on the next request after the application status update commits.
+
+**Files changed**
+- `src/main/java/io/github/abhi07799/platform/security/AccountStatusJwtValidator.java`
+- `src/main/java/io/github/abhi07799/platform/security/config/SecurityConfig.java`
+- `src/test/java/io/github/abhi07799/platform/security/AccountStatusJwtValidatorTest.java`
+- `src/test/java/io/github/abhi07799/platform/administration/api/AdminUserControllerTest.java`
+- `src/test/java/io/github/abhi07799/platform/identity/api/RegistrationControllerTest.java`
+- `src/test/java/io/github/abhi07799/platform/system/api/SystemControllerTest.java`
+- `src/test/java/io/github/abhi07799/platform/user/api/UserProfileControllerTest.java`
+- `README.md`
+- `docs/security/README.md`
+
+**Verification**
+Tests were added but not executed because Maven is not installed in this execution environment. Run `mvn test` with JDK 21 and Maven, then verify with a live Keycloak/PostgreSQL setup: authenticate, call a protected endpoint, disable the account through the ADMIN endpoint, and retry the same endpoint using the original access token. The second request should return HTTP 401.
