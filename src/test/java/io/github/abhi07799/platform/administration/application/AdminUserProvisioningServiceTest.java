@@ -63,7 +63,7 @@ class AdminUserProvisioningServiceTest {
     void canProvisionAdminRoleWhenExplicitlyRequested() {
         when(userProfileRepository.existsByEmailIgnoreCase("person@example.com")).thenReturn(false);
         when(keycloakAdminClient.createUser(any())).thenReturn("keycloak-user-123");
-        when(userProfileRepository.saveAndFlush(any())).thenAnswer(invocation -> invocation.getArgument(0));
+        when(auditPersistenceService.persistProvisionedUser(any(), any(), any())).thenAnswer(invocation -> invocation.getArgument(0));
 
         service.provision(request(AdminUserProvisioningRequest.ProvisionedRole.ADMIN), "admin-subject");
 
@@ -74,7 +74,7 @@ class AdminUserProvisioningServiceTest {
     void rejectsDuplicateEmailBeforeCallingKeycloak() {
         when(userProfileRepository.existsByEmailIgnoreCase("person@example.com")).thenReturn(true);
 
-        assertThatThrownBy(() -> service.provision(request(AdminUserProvisioningRequest.ProvisionedRole.STAFF)))
+        assertThatThrownBy(() -> service.provision(request(AdminUserProvisioningRequest.ProvisionedRole.STAFF), "admin-subject"))
                 .isInstanceOf(EmailAlreadyRegisteredException.class);
         verify(keycloakAdminClient, never()).createUser(any());
     }
@@ -96,9 +96,9 @@ class AdminUserProvisioningServiceTest {
     void compensatesWhenProfilePersistenceFails() {
         when(userProfileRepository.existsByEmailIgnoreCase("person@example.com")).thenReturn(false);
         when(keycloakAdminClient.createUser(any())).thenReturn("keycloak-user-123");
-        when(userProfileRepository.saveAndFlush(any())).thenThrow(new DataIntegrityViolationException("duplicate"));
+        when(auditPersistenceService.persistProvisionedUser(any(), any(), any())).thenThrow(new DataIntegrityViolationException("duplicate"));
 
-        assertThatThrownBy(() -> service.provision(request(AdminUserProvisioningRequest.ProvisionedRole.ADMIN)))
+        assertThatThrownBy(() -> service.provision(request(AdminUserProvisioningRequest.ProvisionedRole.ADMIN), "admin-subject"))
                 .isInstanceOf(EmailAlreadyRegisteredException.class);
         verify(keycloakAdminClient).deleteUser("keycloak-user-123");
     }
