@@ -10,6 +10,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Optional;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.verify;
@@ -42,5 +43,29 @@ class UserProfileServiceTest {
 
         assertThrows(UserProfileNotFoundException.class,
                 () -> userProfileService.getByKeycloakSubjectId(SUBJECT_ID));
+    }
+
+    @Test
+    void updatesFullNameAndMobileNumberForTheAuthenticatedSubject() {
+        UserProfile profile = new UserProfile(
+                SUBJECT_ID, "Original Name", "person@example.com", "+919876543210");
+        when(userProfileRepository.findByKeycloakSubjectId(SUBJECT_ID)).thenReturn(Optional.of(profile));
+
+        UserProfile result = userProfileService.updateProfile(
+                SUBJECT_ID, " Updated Name ", " +919999999999 ");
+
+        assertSame(profile, result);
+        assertEquals("Updated Name", result.getFullName());
+        assertEquals("+919999999999", result.getMobileNumber());
+        assertEquals("person@example.com", result.getEmail());
+        verify(userProfileRepository).findByKeycloakSubjectId(SUBJECT_ID);
+    }
+
+    @Test
+    void doesNotUpdateAnotherUsersProfileWhenSubjectIsUnknown() {
+        when(userProfileRepository.findByKeycloakSubjectId(SUBJECT_ID)).thenReturn(Optional.empty());
+
+        assertThrows(UserProfileNotFoundException.class,
+                () -> userProfileService.updateProfile(SUBJECT_ID, "Updated Name", "+919999999999"));
     }
 }
