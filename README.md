@@ -50,7 +50,7 @@ The backend uses KEYCLOAK_ADMIN_BASE_URL=http://localhost:8081 and realm platfor
 - OpenAPI JSON: http://localhost:8080/v3/api-docs
 - Actuator health: http://localhost:8080/actuator/health
 
-Administrative provisioning, account status changes, and role changes are recorded in the application database audit log. Events record the acting JWT subject, target application profile ID, action, event time, and assigned role, before/after enabled state, or before/after application role. Passwords, tokens, and profile PII are not stored in audit events.
+Administrative provisioning, account status changes, and role changes are recorded in the application database audit log. The last enabled ADMIN cannot be demoted or disabled, and ADMIN provisioning is serialized with role and status changes. Events record the acting JWT subject, target application profile ID, action, event time, and assigned role, before/after enabled state, or before/after application role. Passwords, tokens, and profile PII are not stored in audit events.
 
 In Swagger UI, select **Authorize**, sign in through the `platform` Keycloak realm, and authorize using the `platform-swagger` public client. The access token is attached to secured API calls. The Keycloak redirect URI and browser origin must match the address used to open Swagger UI.
 
