@@ -86,13 +86,23 @@ class KeycloakAdminClientTest {
         client.assignClientRole("user-123", "platform-api", "USER");
         server.verify();
     }
+
     @Test
-    void updatesOnlyTheEnabledFlagForAnExistingUser() {
+    void updatesOnlyTheEnabledFlagAndPreservesExistingKeycloakUserFields() {
+        server.expect(requestTo("http://localhost:8081/admin/realms/platform/users/user-123"))
+                .andExpect(method(HttpMethod.GET))
+                .andExpect(header("Authorization", "Bearer service-token"))
+                .andRespond(withSuccess(
+                        "{\\"id\\":\\"user-123\\",\\"username\\":\\"person@example.com\\",\\"email\\":\\"person@example.com\\",\\"enabled\\":true}",
+                        MediaType.APPLICATION_JSON));
+
         server.expect(requestTo("http://localhost:8081/admin/realms/platform/users/user-123"))
                 .andExpect(method(HttpMethod.PUT))
                 .andExpect(header("Authorization", "Bearer service-token"))
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
-                .andExpect(content().json("{\\"enabled\\":false}"))
+                .andExpect(content().json("""
+                        {"id":"user-123","username":"person@example.com","email":"person@example.com","enabled":false}
+                        """))
                 .andRespond(withStatus(HttpStatus.NO_CONTENT));
 
         client.updateUserEnabled("user-123", false);
