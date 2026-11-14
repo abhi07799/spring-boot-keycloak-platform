@@ -94,6 +94,21 @@ The admin role-management endpoint `PATCH /api/v1/admin/users/{userId}/role` acc
 
 The authenticated self-service endpoint `POST /api/v1/auth/logout` terminates all Keycloak sessions for the JWT subject. The ADMIN-only endpoint `POST /api/v1/admin/users/{userId}/logout` terminates all sessions for a selected application profile. Both operations write a `USER_SESSIONS_REVOKED` audit event and advance `user_profiles.authorization_updated_at`; the resource server rejects access tokens whose `iat` predates that marker. This application-side check is needed because locally validated JWTs are otherwise self-contained. Keycloak's user logout Admin REST operation removes the user's active sessions, preventing those sessions from refreshing tokens. The operation is user-wide, not limited to the browser/device that made the request.
 
+### Refresh-token exchange
+
+The public platform-swagger client uses Authorization Code with PKCE. After a successful code exchange, the OAuth client owns the returned refresh token and can refresh directly at the realm token endpoint:
+
+```bash
+curl --request POST \
+  --url http://localhost:8081/realms/platform/protocol/openid-connect/token \
+  --header 'Content-Type: application/x-www-form-urlencoded' \
+  --data-urlencode 'grant_type=refresh_token' \
+  --data-urlencode 'client_id=platform-swagger' \
+  --data-urlencode "refresh_token=${REFRESH_TOKEN}"
+```
+
+This is a public client, so no client secret is sent. The client must securely retain the refresh token and use the latest refresh token returned by Keycloak when refresh-token rotation is configured. Never send refresh tokens to Spring Boot API endpoints, put them in URLs, or write them to logs. This repository has no frontend token store; Swagger UI authorization must be renewed by re-authorizing when needed.
+
 The API does not accept refresh tokens and does not proxy refresh grants. An OAuth client must exchange its own refresh token directly with the Keycloak realm token endpoint and keep that credential out of application API requests and server logs. This repository has no frontend token store; Swagger UI authorization must be renewed by re-authorizing when needed. A client must discard its locally held tokens after logout; the backend cannot erase a token already copied outside the client.
 
 The admin account-status endpoint `PATCH /api/v1/admin/users/{userId}/status` uses the Keycloak Admin API to enable or disable an identity and mirrors the result in the application profile table. The client first reads the full Keycloak user representation and then updates its `enabled` field, preserving other user attributes. The service updates Keycloak first and persists the application status second; if persistence fails, it attempts a compensating Keycloak update to the previous status. A failed compensation requires operational reconciliation. The resource server also checks the mirrored application profile status on every bearer-token authentication, so the next protected API request rejects an already-issued token after the account-status transaction commits.
