@@ -39,7 +39,6 @@ public class AdminUserSessionService {
     }
 
     private void revokeSessions(UserProfile profile, String actorSubjectId) {
-        boolean[] keycloakLogoutCompleted = {false};
         try {
             roleChangeLockService.withRoleChangeLock(() -> {
                 try {
@@ -47,16 +46,12 @@ public class AdminUserSessionService {
                 } catch (RuntimeException exception) {
                     throw new KeycloakSessionRevocationException(exception);
                 }
-                keycloakLogoutCompleted[0] = true;
                 auditPersistenceService.recordSessionRevocation(profile.getId(), actorSubjectId);
                 return null;
             }, failure -> { });
         } catch (KeycloakSessionRevocationException exception) {
             throw exception;
         } catch (RuntimeException exception) {
-            if (keycloakLogoutCompleted[0]) {
-                throw new SessionRevocationPersistenceException(exception);
-            }
             throw new SessionRevocationPersistenceException(exception);
         }
     }
