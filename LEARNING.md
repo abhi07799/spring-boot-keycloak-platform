@@ -94,3 +94,35 @@ Authentication, API audience validation, application authorization roles, and pr
 
 **Verification**
 The realm definition was generated as JSON and structurally validated. Docker Compose and a live Keycloak container are not available in this execution environment, so the import, generated service-account credentials, role assignments, and actual JWT claims still require local runtime verification.
+
+
+## Step 2.3 — Spring Boot project skeleton
+
+**What we implemented**
+- Created a Java 21 Maven project using Spring Boot 4.1.2.
+- Added Spring MVC, Actuator, Bean Validation, Springdoc OpenAPI 3.2.0, and Spring Boot test dependencies.
+- Added the main application class, a minimal versioned ping endpoint, and an MVC test.
+- Added application metadata, health endpoint exposure, and package-by-feature architecture guidance.
+- Kept database connectivity and Spring Security out of this skeleton; they are separate milestones.
+
+**Why**
+A small, testable application baseline gives later persistence and identity features a stable place to integrate without mixing infrastructure concerns into the initial application setup.
+
+**Important concepts**
+- **Maven parent/BOM:** Spring Boot's parent manages compatible dependency versions so individual Spring dependencies do not need arbitrary version pins.
+- **Starter:** a curated dependency descriptor that brings in the modules needed for a capability.
+- **Actuator:** exposes operational endpoints such as application health.
+- **Package by feature:** groups code by business capability rather than creating global controller/service/repository layers.
+
+**Files changed**
+- `pom.xml`
+- `src/main/java/io/github/abhi07799/platform/PlatformApplication.java`
+- `src/main/java/io/github/abhi07799/platform/system/api/SystemController.java`
+- `src/main/resources/application.yaml`
+- `src/test/java/io/github/abhi07799/platform/system/api/SystemControllerTest.java`
+- `docs/architecture/package-structure.md`
+- `README.md`
+- `LEARNING.md`
+
+**Verification**
+The project structure and dependency coordinates were checked against the Spring Boot 4.1.2 and Springdoc OpenAPI 3.2.0 documentation. The Maven build and tests still need to be run in an environment with JDK 21 and Maven installed.
