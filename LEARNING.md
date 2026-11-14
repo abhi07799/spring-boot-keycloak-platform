@@ -71,6 +71,7 @@ The Compose YAML was parsed successfully and its three services, two named volum
 - Defined the bearer-only `platform-api` resource identifier, public `platform-swagger` client with Authorization Code + PKCE S256, and confidential `platform-admin-service` client with service accounts enabled.
 - Added the `ADMIN`, `STAFF`, and `USER` client roles under `platform-api`.
 - Added an explicit `platform-api` audience mapper to Swagger-issued access tokens.
+- Disabled Full Scope Allowed on all clients and documented the explicit Swagger role-scope mapping.
 - Documented manual, least-privilege service-account role assignment without committing credentials.
 
 **Why**
@@ -82,6 +83,7 @@ Authentication, API audience validation, application authorization roles, and pr
 - **Confidential service account:** authenticates server-to-server with client credentials and must receive only the Admin REST API permissions it needs.
 - **Audience (`aud`):** identifies the API for which an access token is intended. The backend will validate the API audience in addition to issuer and signature.
 - **Client roles:** appear under `resource_access` in access tokens when their role mappings are included.
+- **Role scope mapping:** limits which assigned roles a client is allowed to receive in its tokens; Full Scope Allowed remains disabled.
 
 **Files changed**
 - `compose.yaml`
