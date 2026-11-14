@@ -62,6 +62,7 @@ See [Keycloak configuration](docs/keycloak/README.md), [security setup](docs/sec
 ## Branch workflow
 - `main`: stable baseline.
 - `develop`: integration branch.
+- `step1/initial-project-setup`: initial repository baseline.
 - Later milestones use numbered prefixes such as `step2.1/`, `step2.2/`, `step2.3/`, `step2.4/`, and `step3.1/`.
 
 ## Learning journal
