@@ -1,6 +1,7 @@
 package io.github.abhi07799.platform.identity.infrastructure.keycloak;
 
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -14,6 +15,8 @@ import org.springframework.web.client.RestClient;
 
 @Component
 public class KeycloakAdminClient {
+
+    private static final List<String> PLATFORM_ROLES = List.of("USER", "STAFF", "ADMIN");
 
     private final KeycloakAdminTokenProvider tokenProvider;
     private final RestClient restClient;
@@ -87,6 +90,60 @@ public class KeycloakAdminClient {
     }
 
     public void assignClientRole(String userId, String clientId, String roleName) {
+        String clientUuid = resolveClientUuid(clientId);
+        KeycloakRoleRepresentation role = getClientRole(clientUuid, roleName);
+        addClientRoleMapping(userId, clientUuid, role);
+    }
+
+    /**
+     * Replaces the user's single platform-api application role. Other client and realm
+     * role mappings are deliberately left untouched.
+     *
+     * @return the previous platform-api role
+     */
+    public String updateClientRole(String userId, String clientId, String targetRole) {
+        if (!PLATFORM_ROLES.contains(targetRole)) {
+            throw new IllegalArgumentException("Unsupported platform role: " + targetRole);
+        }
+
+        String clientUuid = resolveClientUuid(clientId);
+        List<KeycloakRoleRepresentation> mappings = getClientRoleMappings(userId, clientUuid);
+        List<KeycloakRoleRepresentation> currentPlatformRoles = mappings.stream()
+                .filter(role -> PLATFORM_ROLES.contains(role.name()))
+                .toList();
+
+        if (currentPlatformRoles.size() != 1) {
+            throw new IllegalStateException("Expected exactly one platform-api role for Keycloak user " + userId);
+        }
+
+        KeycloakRoleRepresentation previousRole = currentPlatformRoles.getFirst();
+        if (previousRole.name().equals(targetRole)) {
+            return previousRole.name();
+        }
+
+        if ("ADMIN".equals(previousRole.name()) && !"ADMIN".equals(targetRole)) {
+            List<Map<String, Object>> administrators = getClientRoleUsers(clientUuid, "ADMIN", 2);
+            if (administrators.size() <= 1) {
+                throw new KeycloakLastAdminException();
+            }
+        }
+
+        KeycloakRoleRepresentation requestedRole = getClientRole(clientUuid, targetRole);
+        addClientRoleMapping(userId, clientUuid, requestedRole);
+        try {
+            removeClientRoleMapping(userId, clientUuid, previousRole);
+        } catch (RuntimeException removalFailure) {
+            try {
+                removeClientRoleMapping(userId, clientUuid, requestedRole);
+            } catch (RuntimeException compensationFailure) {
+                removalFailure.addSuppressed(compensationFailure);
+            }
+            throw removalFailure;
+        }
+        return previousRole.name();
+    }
+
+    private String resolveClientUuid(String clientId) {
         List<KeycloakClientReference> clients = restClient.get()
                 .uri(uriBuilder -> uriBuilder
                         .path("/admin/realms/{realm}/clients")
@@ -99,8 +156,10 @@ public class KeycloakAdminClient {
         if (clients == null || clients.size() != 1 || clients.getFirst().id() == null) {
             throw new IllegalStateException("Expected exactly one Keycloak client with ID: " + clientId);
         }
+        return clients.getFirst().id();
+    }
 
-        String clientUuid = clients.getFirst().id();
+    private KeycloakRoleRepresentation getClientRole(String clientUuid, String roleName) {
         KeycloakRoleRepresentation role = restClient.get()
                 .uri("/admin/realms/{realm}/clients/{clientUuid}/roles/{roleName}",
                         realm, clientUuid, roleName)
@@ -109,10 +168,49 @@ public class KeycloakAdminClient {
                 .body(KeycloakRoleRepresentation.class);
 
         if (role == null || role.id() == null) {
-            throw new IllegalStateException("Keycloak client role was not found: " + clientId + "/" + roleName);
+            throw new IllegalStateException("Keycloak client role was not found: " + roleName);
         }
+        return role;
+    }
 
+    private List<KeycloakRoleRepresentation> getClientRoleMappings(String userId, String clientUuid) {
+        List<KeycloakRoleRepresentation> roles = restClient.get()
+                .uri("/admin/realms/{realm}/users/{userId}/role-mappings/clients/{clientUuid}",
+                        realm, userId, clientUuid)
+                .header(HttpHeaders.AUTHORIZATION, bearerToken())
+                .retrieve()
+                .body(new ParameterizedTypeReference<>() { });
+        return roles == null ? List.of() : roles;
+    }
+
+    private List<Map<String, Object>> getClientRoleUsers(String clientUuid, String roleName, int max) {
+        List<Map<String, Object>> users = restClient.get()
+                .uri(uriBuilder -> uriBuilder
+                        .path("/admin/realms/{realm}/clients/{clientUuid}/roles/{roleName}/users")
+                        .queryParam("first", 0)
+                        .queryParam("max", max)
+                        .build(realm, clientUuid, roleName))
+                .header(HttpHeaders.AUTHORIZATION, bearerToken())
+                .retrieve()
+                .body(new ParameterizedTypeReference<>() { });
+        return users == null ? List.of() : users;
+    }
+
+    private void addClientRoleMapping(
+            String userId, String clientUuid, KeycloakRoleRepresentation role) {
         restClient.post()
+                .uri("/admin/realms/{realm}/users/{userId}/role-mappings/clients/{clientUuid}",
+                        realm, userId, clientUuid)
+                .header(HttpHeaders.AUTHORIZATION, bearerToken())
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(List.of(role))
+                .retrieve()
+                .toBodilessEntity();
+    }
+
+    private void removeClientRoleMapping(
+            String userId, String clientUuid, KeycloakRoleRepresentation role) {
+        restClient.method(org.springframework.http.HttpMethod.DELETE)
                 .uri("/admin/realms/{realm}/users/{userId}/role-mappings/clients/{clientUuid}",
                         realm, userId, clientUuid)
                 .header(HttpHeaders.AUTHORIZATION, bearerToken())
