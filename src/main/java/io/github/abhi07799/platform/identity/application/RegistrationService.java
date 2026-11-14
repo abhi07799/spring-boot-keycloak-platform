@@ -65,6 +65,9 @@ public class RegistrationService {
         } catch (RestClientException exception) {
             throw new RegistrationFailedException(
                     "The identity provider could not create the account. Please try again later.", exception);
+        } catch (RuntimeException exception) {
+            throw new RegistrationFailedException(
+                    "The identity provider could not create the account. Please try again later.", exception);
         }
 
         try {
