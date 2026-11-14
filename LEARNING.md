@@ -444,7 +444,7 @@ Administrators need a bounded way to inspect application accounts after registra
 
 **Important concepts**
 - **Spring Data pagination:** `PageRequest` translates page and size into a database-level paginated query.
-- **Deterministic sorting:** the query sorts newest profiles first rather than relying on unspecified database row order.
+- **Deterministic sorting:** the query sorts newest profiles first and uses the profile ID as a tie-breaker rather than relying on unspecified database row order.
 - **Bounded page size:** a maximum of 100 limits response size and database work per request.
 - **DTO projection at the API boundary:** the endpoint reuses the public-safe profile response instead of serializing persistence entities.
 
