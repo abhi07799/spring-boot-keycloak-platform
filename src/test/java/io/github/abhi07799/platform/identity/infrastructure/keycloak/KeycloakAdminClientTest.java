@@ -8,13 +8,14 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.web.client.RestClient;
 
+import java.util.List;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.content;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.header;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.method;
-import static org.springframework.test.web.client.match.MockRestRequestMatchers.queryParam;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withStatus;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
@@ -45,8 +46,8 @@ class KeycloakAdminClientTest {
 
         KeycloakUserRepresentation user = new KeycloakUserRepresentation(
                 "person@example.com", "person@example.com", "Test", "Person",
-                true, false, java.util.List.of(),
-                java.util.List.of(new KeycloakUserRepresentation.CredentialRepresentation(
+                true, false, List.of(),
+                List.of(new KeycloakUserRepresentation.CredentialRepresentation(
                         "password", "not-a-real-password", true)));
 
         assertThat(client.createUser(user)).isEqualTo("user-123");
