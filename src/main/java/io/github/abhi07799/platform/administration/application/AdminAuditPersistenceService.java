@@ -26,7 +26,7 @@ public class AdminAuditPersistenceService {
     public UserProfile persistProvisionedUser(UserProfile profile, String actorSubjectId, String assignedRole) {
         UserProfile saved = userProfileRepository.saveAndFlush(profile);
         auditEventRepository.saveAndFlush(new AdminAuditEvent(
-                actorSubjectId, "USER_PROVISIONED", saved.getId(), assignedRole, null, null));
+                actorSubjectId, "USER_PROVISIONED", saved.getId(), assignedRole, null, null, null, null));
         return saved;
     }
 
@@ -44,8 +44,16 @@ public class AdminAuditPersistenceService {
                     saved.getId(),
                     null,
                     previousEnabled,
-                    newEnabled));
+                    newEnabled,
+                    null,
+                    null));
         }
         return saved;
+    }
+
+    @Transactional
+    public void recordRoleChange(UUID userId, String actorSubjectId, String previousRole, String newRole) {
+        auditEventRepository.saveAndFlush(new AdminAuditEvent(
+                actorSubjectId, "USER_ROLE_CHANGED", userId, null, null, null, previousRole, newRole));
     }
 }
