@@ -61,4 +61,4 @@ Start Keycloak using the repository's Compose setup before making authenticated 
 
 ## Verification
 
-The automated tests cover the OpenAPI authorization/token endpoint configuration and public ping documentation metadata. Run `mvn test` locally with JDK 21 and Maven. End-to-end login, redirect URI matching, PKCE exchange, role scopes, and live API invocation require the Compose Keycloak service and a browser.
+The automated tests cover the OpenAPI authorization/token endpoint configuration and issuer URL normalization. The ping handler is annotated as public in the OpenAPI description. Run `mvn test` locally with JDK 21 and Maven. End-to-end login, redirect URI matching, PKCE exchange, role scopes, and live API invocation require the Compose Keycloak service and a browser.
