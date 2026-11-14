@@ -1,6 +1,7 @@
 package io.github.abhi07799.platform.administration.application;
 
 import io.github.abhi07799.platform.identity.infrastructure.keycloak.KeycloakAdminClient;
+import io.github.abhi07799.platform.identity.infrastructure.keycloak.KeycloakLastAdminException;
 import io.github.abhi07799.platform.user.api.UserProfileResponse;
 import io.github.abhi07799.platform.user.infrastructure.persistence.UserProfile;
 import io.github.abhi07799.platform.user.infrastructure.persistence.UserProfileRepository;
@@ -38,11 +39,24 @@ class AdminUserStatusServiceTest {
     @Mock
     private AdminAuditPersistenceService auditPersistenceService;
 
+    @Mock
+    private AdminRoleChangeLockService roleChangeLockService;
+
     private AdminUserStatusService service;
 
     @BeforeEach
     void setUp() {
-        service = new AdminUserStatusService(userProfileRepository, keycloakAdminClient, auditPersistenceService);
+        service = new AdminUserStatusService(
+                userProfileRepository, keycloakAdminClient, auditPersistenceService, roleChangeLockService);
+        org.mockito.Mockito.doAnswer(invocation -> {
+                    try {
+                        return ((java.util.function.Supplier<?>) invocation.getArgument(0)).get();
+                    } catch (RuntimeException failure) {
+                        ((java.util.function.Consumer<RuntimeException>) invocation.getArgument(1)).accept(failure);
+                        throw failure;
+                    }
+                }).when(roleChangeLockService).withRoleChangeLock(
+                        org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any());
     }
 
     @Test
@@ -100,6 +114,21 @@ class AdminUserStatusServiceTest {
         verify(auditPersistenceService, never()).persistStatusChange(USER_ID, "admin-subject", true, false);
     }
 
+
+    @Test
+    void preventsDisablingTheLastEnabledAdministrator() {
+        UserProfile profile = new UserProfile(
+                KEYCLOAK_SUBJECT, "Test Person", "person@example.com", "+919876543210");
+        when(userProfileRepository.findById(USER_ID)).thenReturn(Optional.of(profile));
+        doThrow(new KeycloakLastAdminException())
+                .when(keycloakAdminClient).updateUserEnabled(KEYCLOAK_SUBJECT, false);
+
+        assertThatThrownBy(() -> service.updateEnabledStatus(USER_ID, false, "admin-subject"))
+                .isInstanceOf(LastAdminProtectionException.class);
+
+        verify(auditPersistenceService, never()).persistStatusChange(USER_ID, "admin-subject", true, false);
+    }
+
     @Test
     void restoresKeycloakStatusWhenDatabasePersistenceFails() {
         UserProfile profile = new UserProfile(
@@ -113,7 +142,7 @@ class AdminUserStatusServiceTest {
                 .isInstanceOf(AdminUserStatusUpdateException.class);
         InOrder order = inOrder(keycloakAdminClient);
         order.verify(keycloakAdminClient).updateUserEnabled(KEYCLOAK_SUBJECT, false);
-        order.verify(keycloakAdminClient).updateUserEnabled(KEYCLOAK_SUBJECT, true);
+        order.verify(keycloakAdminClient).restoreUserEnabled(KEYCLOAK_SUBJECT, true);
     }
 
     @Test
@@ -125,7 +154,7 @@ class AdminUserStatusServiceTest {
         when(auditPersistenceService.persistStatusChange(USER_ID, "admin-subject", true, false))
                 .thenThrow(new DataIntegrityViolationException("database unavailable"));
         doThrow(new IllegalStateException("Keycloak unavailable"))
-                .when(keycloakAdminClient).updateUserEnabled(KEYCLOAK_SUBJECT, true);
+                .when(keycloakAdminClient).restoreUserEnabled(KEYCLOAK_SUBJECT, true);
 
         assertThatThrownBy(() -> service.updateEnabledStatus(USER_ID, false, "admin-subject"))
                 .isInstanceOf(AdminUserStatusCompensationException.class);

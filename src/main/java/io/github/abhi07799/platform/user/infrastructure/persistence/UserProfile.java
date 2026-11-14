@@ -41,6 +41,9 @@ public class UserProfile {
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
+    @Column(name = "authorization_updated_at", nullable = false)
+    private Instant authorizationUpdatedAt = Instant.EPOCH;
+
     protected UserProfile() {
     }
 
@@ -58,6 +61,10 @@ public class UserProfile {
 
     public void updateEnabled(boolean enabled) {
         this.enabled = enabled;
+    }
+
+    public void markAuthorizationUpdated() {
+        this.authorizationUpdatedAt = Instant.now();
     }
 
     @PrePersist
@@ -102,5 +109,9 @@ public class UserProfile {
 
     public Instant getUpdatedAt() {
         return updatedAt;
+    }
+
+    public Instant getAuthorizationUpdatedAt() {
+        return authorizationUpdatedAt;
     }
 }

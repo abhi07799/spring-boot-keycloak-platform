@@ -62,9 +62,16 @@ Migration V1 creates `user_profiles` with:
 
 No password, password hash, or Keycloak internal database field is stored in the application database. The Keycloak subject is the stable link between the identity and the application profile.
 
-## Verify the migration
+## Administrative data and coordination tables
 
-Start the app with the datasource environment variables set. On successful startup, Flyway applies V1 and Hibernate validates the mapped entity against the resulting schema.
+- V2 adds the mirrored `user_profiles.enabled` flag.
+- V3 creates the append-only `admin_audit_events` table for provisioning and account-status actions.
+- V4 extends audit records with previous/new application roles and adds the `USER_ROLE_CHANGED` event type.
+Role-management, ADMIN provisioning, and account-status operations use a PostgreSQL session-level advisory lock (no additional lock table or migration is required). The session lock is held across the application transaction and any compensating Keycloak call, including after transaction rollback. The lock uses one pooled connection while the transaction manager uses another, so configure the datasource pool for at least two connections (HikariCP defaults to a larger pool).
+
+## Verify the migrations
+
+Start the app with the datasource environment variables set. On successful startup, Flyway applies all pending migrations and Hibernate validates the mapped entities against the resulting schema.
 
 Inspect the database:
 

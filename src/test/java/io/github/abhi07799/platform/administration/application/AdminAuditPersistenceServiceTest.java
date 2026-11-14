@@ -69,6 +69,20 @@ class AdminAuditPersistenceServiceTest {
         assertThat(event.getValue().getNewEnabled()).isFalse();
     }
 
+
+    @Test
+    void recordsPreviousAndNewApplicationRoles() {
+        service.recordRoleChange(USER_ID, "admin-subject", "USER", "STAFF");
+
+        ArgumentCaptor<AdminAuditEvent> event = ArgumentCaptor.forClass(AdminAuditEvent.class);
+        verify(auditEventRepository).saveAndFlush(event.capture());
+        assertThat(event.getValue().getAction()).isEqualTo("USER_ROLE_CHANGED");
+        assertThat(event.getValue().getTargetUserId()).isEqualTo(USER_ID);
+        assertThat(event.getValue().getActorSubjectId()).isEqualTo("admin-subject");
+        assertThat(event.getValue().getPreviousRole()).isEqualTo("USER");
+        assertThat(event.getValue().getNewRole()).isEqualTo("STAFF");
+    }
+
     @Test
     void doesNotCreateNoiseForAnUnchangedStatus() {
         UserProfile profile = new UserProfile("target-subject", "Test Person",

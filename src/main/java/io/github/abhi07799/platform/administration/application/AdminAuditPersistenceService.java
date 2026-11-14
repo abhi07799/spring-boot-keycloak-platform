@@ -26,7 +26,7 @@ public class AdminAuditPersistenceService {
     public UserProfile persistProvisionedUser(UserProfile profile, String actorSubjectId, String assignedRole) {
         UserProfile saved = userProfileRepository.saveAndFlush(profile);
         auditEventRepository.saveAndFlush(new AdminAuditEvent(
-                actorSubjectId, "USER_PROVISIONED", saved.getId(), assignedRole, null, null));
+                actorSubjectId, "USER_PROVISIONED", saved.getId(), assignedRole, null, null, null, null));
         return saved;
     }
 
@@ -36,6 +36,9 @@ public class AdminAuditPersistenceService {
         UserProfile profile = userProfileRepository.findById(userId)
                 .orElseThrow(AdminUserNotFoundException::new);
         profile.updateEnabled(newEnabled);
+        if (previousEnabled != newEnabled) {
+            profile.markAuthorizationUpdated();
+        }
         UserProfile saved = userProfileRepository.saveAndFlush(profile);
         if (previousEnabled != newEnabled) {
             auditEventRepository.saveAndFlush(new AdminAuditEvent(
@@ -44,8 +47,20 @@ public class AdminAuditPersistenceService {
                     saved.getId(),
                     null,
                     previousEnabled,
-                    newEnabled));
+                    newEnabled,
+                    null,
+                    null));
         }
         return saved;
+    }
+
+    @Transactional
+    public void recordRoleChange(UUID userId, String actorSubjectId, String previousRole, String newRole) {
+        UserProfile profile = userProfileRepository.findById(userId)
+                .orElseThrow(AdminUserNotFoundException::new);
+        profile.markAuthorizationUpdated();
+        userProfileRepository.saveAndFlush(profile);
+        auditEventRepository.saveAndFlush(new AdminAuditEvent(
+                actorSubjectId, "USER_ROLE_CHANGED", userId, null, null, null, previousRole, newRole));
     }
 }

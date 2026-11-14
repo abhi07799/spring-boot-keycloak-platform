@@ -37,6 +37,12 @@ public class AdminAuditEvent {
     @Column(name = "new_enabled", updatable = false)
     private Boolean newEnabled;
 
+    @Column(name = "previous_role", length = 20, updatable = false)
+    private String previousRole;
+
+    @Column(name = "new_role", length = 20, updatable = false)
+    private String newRole;
+
     @Column(name = "occurred_at", nullable = false, updatable = false)
     private Instant occurredAt;
 
@@ -44,13 +50,16 @@ public class AdminAuditEvent {
     }
 
     public AdminAuditEvent(String actorSubjectId, String action, UUID targetUserId,
-                           String assignedRole, Boolean previousEnabled, Boolean newEnabled) {
+                           String assignedRole, Boolean previousEnabled, Boolean newEnabled,
+                           String previousRole, String newRole) {
         this.actorSubjectId = actorSubjectId;
         this.action = action;
         this.targetUserId = targetUserId;
         this.assignedRole = assignedRole;
         this.previousEnabled = previousEnabled;
         this.newEnabled = newEnabled;
+        this.previousRole = previousRole;
+        this.newRole = newRole;
     }
 
     @PrePersist
@@ -65,5 +74,7 @@ public class AdminAuditEvent {
     public String getAssignedRole() { return assignedRole; }
     public Boolean getPreviousEnabled() { return previousEnabled; }
     public Boolean getNewEnabled() { return newEnabled; }
+    public String getPreviousRole() { return previousRole; }
+    public String getNewRole() { return newRole; }
     public Instant getOccurredAt() { return occurredAt; }
 }

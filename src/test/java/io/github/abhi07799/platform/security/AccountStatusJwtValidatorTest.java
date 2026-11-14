@@ -12,6 +12,7 @@ import org.springframework.security.oauth2.core.OAuth2TokenValidatorResult;
 import org.springframework.security.oauth2.jwt.Jwt;
 
 import java.util.Optional;
+import java.time.Instant;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verify;
@@ -106,9 +107,40 @@ class AccountStatusJwtValidatorTest {
     }
 
     private Jwt jwt(String subject) {
+        return jwt(subject, Instant.now().plusSeconds(2));
+    }
+
+
+    @Test
+    void rejectsTokenIssuedBeforeTheLatestRoleOrStatusChange() {
+        UserProfile profile = new UserProfile(
+                SUBJECT, "Test Person", "person@example.com", "+919876543210");
+        profile.markAuthorizationUpdated();
+        when(userProfileRepository.findByKeycloakSubjectId(SUBJECT)).thenReturn(Optional.of(profile));
+
+        OAuth2TokenValidatorResult result = validator.validate(jwt(SUBJECT, Instant.now().minusSeconds(2)));
+
+        assertThat(result.getErrors()).hasSize(1);
+        assertThat(result.getErrors().iterator().next().getErrorCode()).isEqualTo("invalid_token");
+    }
+
+    @Test
+    void acceptsTokenIssuedAfterTheLatestRoleOrStatusChange() {
+        UserProfile profile = new UserProfile(
+                SUBJECT, "Test Person", "person@example.com", "+919876543210");
+        profile.markAuthorizationUpdated();
+        when(userProfileRepository.findByKeycloakSubjectId(SUBJECT)).thenReturn(Optional.of(profile));
+
+        OAuth2TokenValidatorResult result = validator.validate(jwt(SUBJECT, Instant.now().plusSeconds(2)));
+
+        assertThat(result.getErrors()).isEmpty();
+    }
+
+    private Jwt jwt(String subject, Instant issuedAt) {
         var builder = Jwt.withTokenValue("test-token")
                 .header("alg", "RS256")
-                .claim("iss", "http://localhost:8081/realms/platform");
+                .claim("iss", "http://localhost:8081/realms/platform")
+                .issuedAt(issuedAt);
         if (subject != null) {
             builder.subject(subject);
         }

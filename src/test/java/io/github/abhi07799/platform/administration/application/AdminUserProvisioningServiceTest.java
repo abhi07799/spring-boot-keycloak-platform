@@ -36,11 +36,24 @@ class AdminUserProvisioningServiceTest {
     @Mock
     private AdminAuditPersistenceService auditPersistenceService;
 
+    @Mock
+    private AdminRoleChangeLockService roleChangeLockService;
+
     private AdminUserProvisioningService service;
 
     @BeforeEach
     void setUp() {
-        service = new AdminUserProvisioningService(keycloakAdminClient, userProfileRepository, auditPersistenceService);
+        service = new AdminUserProvisioningService(
+                keycloakAdminClient, userProfileRepository, auditPersistenceService, roleChangeLockService);
+        org.mockito.Mockito.lenient().doAnswer(invocation -> {
+                    try {
+                        return ((java.util.function.Supplier<?>) invocation.getArgument(0)).get();
+                    } catch (RuntimeException failure) {
+                        ((java.util.function.Consumer<RuntimeException>) invocation.getArgument(1)).accept(failure);
+                        throw failure;
+                    }
+                }).when(roleChangeLockService).withRoleChangeLock(
+                        org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any());
     }
 
     @Test
@@ -68,6 +81,8 @@ class AdminUserProvisioningServiceTest {
         service.provision(request(AdminUserProvisioningRequest.ProvisionedRole.ADMIN), "admin-subject");
 
         verify(keycloakAdminClient).assignClientRole("keycloak-user-123", "platform-api", "ADMIN");
+        verify(roleChangeLockService).withRoleChangeLock(
+                org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any());
     }
 
     @Test
