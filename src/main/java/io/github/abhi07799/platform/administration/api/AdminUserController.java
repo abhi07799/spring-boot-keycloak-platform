@@ -4,6 +4,7 @@ import io.github.abhi07799.platform.administration.application.AdminUserDirector
 import io.github.abhi07799.platform.administration.application.AdminUserProvisioningService;
 import io.github.abhi07799.platform.administration.application.AdminUserStatusService;
 import io.github.abhi07799.platform.administration.application.AdminUserRoleService;
+import io.github.abhi07799.platform.administration.application.AdminUserSessionService;
 import io.github.abhi07799.platform.identity.api.RegistrationResponse;
 import io.github.abhi07799.platform.user.api.UserProfileResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -15,6 +16,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -33,16 +35,19 @@ public class AdminUserController {
     private final AdminUserDirectoryService directoryService;
     private final AdminUserStatusService statusService;
     private final AdminUserRoleService roleService;
+    private final AdminUserSessionService sessionService;
 
     public AdminUserController(
             AdminUserProvisioningService provisioningService,
             AdminUserDirectoryService directoryService,
             AdminUserStatusService statusService,
-            AdminUserRoleService roleService) {
+            AdminUserRoleService roleService,
+            AdminUserSessionService sessionService) {
         this.provisioningService = provisioningService;
         this.directoryService = directoryService;
         this.statusService = statusService;
         this.roleService = roleService;
+        this.sessionService = sessionService;
     }
 
     @Operation(summary = "List application users (ADMIN only)")
@@ -69,6 +74,13 @@ public class AdminUserController {
             @Valid @RequestBody UpdateAdminUserRoleRequest request,
             @AuthenticationPrincipal Jwt jwt) {
         return roleService.updateRole(userId, request.role(), jwt.getSubject());
+    }
+
+    @Operation(summary = "Terminate all sessions for an application user (ADMIN only)")
+    @PostMapping("/{userId}/logout")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void logoutUser(@PathVariable UUID userId, @AuthenticationPrincipal Jwt jwt) {
+        sessionService.logoutUser(userId, jwt.getSubject());
     }
 
     @Operation(summary = "Create a STAFF or ADMIN account (ADMIN only)")
