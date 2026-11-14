@@ -461,3 +461,45 @@ Administrators need a bounded way to inspect application accounts after registra
 
 **Verification**
 Tests were added but not executed because Maven is not installed in this execution environment. Run `mvn test` with JDK 21 and Maven. A live PostgreSQL/Keycloak check is also pending.
+
+
+## Step 3.9 — ADMIN account activation and deactivation
+
+**What we implemented**
+- Added `PATCH /api/v1/admin/users/{userId}/status`, protected by the existing `ROLE_ADMIN` rule.
+- Added a request contract requiring an explicit `enabled` boolean; omitted or null status is rejected.
+- Added a Flyway V2 migration that adds `user_profiles.enabled BOOLEAN NOT NULL DEFAULT TRUE`, preserving existing accounts as enabled.
+- Added account status to the profile entity and safe profile response, so the paginated ADMIN directory shows each account's enabled state.
+- Added a Keycloak Admin API operation that reads the full user representation, changes only its `enabled` field, and writes the representation back.
+- Added an application service that updates Keycloak first, then persists the mirrored application status. If database persistence fails, it attempts to restore the previous Keycloak status. Failed compensation is logged with the application profile ID.
+- Added API, service, and Keycloak client tests for disable, re-enable, authorization, validation, Keycloak failure, persistence failure, and failed compensation.
+- Documented the account lifecycle endpoint, service-account permissions, and the access-token revocation limitation.
+
+**Why**
+Keycloak remains the identity provider and controls whether the account can authenticate or refresh tokens. The application database keeps a mirrored enabled flag for administrative visibility. Since Keycloak and PostgreSQL are separate systems, status synchronization uses a compensating action rather than pretending to provide a distributed ACID transaction.
+
+**Important concepts**
+- **Account enabled state:** disabling a Keycloak user blocks future authentication and token refresh for that identity.
+- **Cross-system consistency:** the service updates Keycloak first and then writes the application mirror; if the database write fails, it attempts to restore the old Keycloak value.
+- **Safe representation update:** the Admin API client reads the existing Keycloak user representation before changing `enabled`, preserving the other returned attributes.
+- **Access-token lifetime:** the resource server validates JWTs locally. A token already issued before deactivation may remain valid until its expiry; disabling an account is not instantaneous revocation of every outstanding self-contained JWT.
+
+**Files changed**
+- `src/main/resources/db/migration/V2__add_user_profile_enabled_status.sql`
+- `src/main/java/io/github/abhi07799/platform/user/infrastructure/persistence/UserProfile.java`
+- `src/main/java/io/github/abhi07799/platform/user/api/UserProfileResponse.java`
+- `src/main/java/io/github/abhi07799/platform/identity/infrastructure/keycloak/KeycloakAdminClient.java`
+- `src/main/java/io/github/abhi07799/platform/administration/api/UpdateUserAccountStatusRequest.java`
+- `src/main/java/io/github/abhi07799/platform/administration/api/AdminUserProvisioningController.java`
+- `src/main/java/io/github/abhi07799/platform/administration/api/AdminUserExceptionHandler.java`
+- `src/main/java/io/github/abhi07799/platform/administration/application/AdminUserStatusService.java`
+- `src/test/java/io/github/abhi07799/platform/identity/infrastructure/keycloak/KeycloakAdminClientTest.java`
+- `src/test/java/io/github/abhi07799/platform/administration/api/AdminUserProvisioningControllerTest.java`
+- `src/test/java/io/github/abhi07799/platform/administration/application/AdminUserStatusServiceTest.java`
+- `README.md`
+- `docs/security/README.md`
+- `docs/keycloak/README.md`
+- `docs/architecture/package-structure.md`
+
+**Verification**
+Tests were added but not executed because Maven is not installed in this execution environment. Run `mvn test` with JDK 21 and Maven. Apply Flyway migration V2 and verify disable/re-enable against the local Keycloak 26.8.2 instance. Existing self-contained access tokens remain valid until expiry unless a separate revocation/introspection strategy is introduced.
