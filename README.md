@@ -38,7 +38,7 @@ The backend is a Maven-based Spring MVC application secured as a stateless OAuth
 The backend uses KEYCLOAK_ADMIN_BASE_URL=http://localhost:8081 and realm platform by default. If running the backend inside Compose, use http://keycloak:8080 for the admin base URL and ensure the configured issuer/token endpoint is reachable from that container.
 
 - Registration endpoint: `POST http://localhost:8080/api/v1/auth/register` (public; assigns only `USER`).
-- Current user profile: `GET http://localhost:8080/api/v1/users/me` (authenticated; resolves the profile from the JWT subject).
+- Current user profile: `GET http://localhost:8080/api/v1/users/me` (authenticated; resolves the profile from the JWT subject).\n- Update current user profile: `PUT http://localhost:8080/api/v1/users/me` (authenticated; updates full name and mobile number only).
 - Admin provisioning: `POST http://localhost:8080/api/v1/admin/users` (ADMIN only; creates `STAFF` or `ADMIN`).
 - Ping endpoint: http://localhost:8080/api/v1/ping (public)
 - Swagger UI: http://localhost:8080/swagger-ui.html (Keycloak OAuth2 + PKCE)
@@ -71,7 +71,7 @@ See [Keycloak configuration](docs/keycloak/README.md), [security setup](docs/sec
 - `main`: stable baseline.
 - `develop`: integration branch.
 - `step1/initial-project-setup`: initial repository baseline.
-- Later milestones use numbered prefixes such as `step2.1/`, `step2.2/`, `step2.3/`, `step2.4/`, `step3.1/`, `step3.2/`, `step3.3/`, `step3.4/`, `step3.5/`, and `step3.6/`.
+- Later milestones use numbered prefixes such as `step2.1/`, `step2.2/`, `step2.3/`, `step2.4/`, `step3.1/`, `step3.2/`, `step3.3/`, `step3.4/`, `step3.5/`, `step3.6/`, and `step3.7/`.
 
 ## Learning journal
 See [LEARNING.md](LEARNING.md).
