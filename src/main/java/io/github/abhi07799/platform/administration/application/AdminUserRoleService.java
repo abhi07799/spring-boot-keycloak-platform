@@ -36,23 +36,9 @@ public class AdminUserRoleService {
     public AdminUserRoleResponse updateRole(
             UUID userId, UpdateAdminUserRoleRequest.Role requestedRole, String actorSubjectId) {
         RoleChangeContext context = new RoleChangeContext();
-        try {
-            return roleChangeLockService.withRoleChangeLock(
-                    () -> updateRoleWhileLocked(userId, requestedRole, actorSubjectId, context));
-        } catch (RuntimeException failure) {
-            if (context.previousRole == null || context.previousRole.equals(requestedRole.name())) {
-                throw failure;
-            }
-            try {
-                keycloakAdminClient.restoreClientRole(
-                        context.targetKeycloakSubjectId, "platform-api", context.previousRole);
-            } catch (RuntimeException compensationFailure) {
-                failure.addSuppressed(compensationFailure);
-                log.error("Role update compensation failed for application user id {}", userId, failure);
-                throw new AdminUserRoleCompensationException(failure);
-            }
-            throw new AdminUserRoleUpdateException(failure);
-        }
+        return roleChangeLockService.withRoleChangeLock(
+                () -> updateRoleWhileLocked(userId, requestedRole, actorSubjectId, context),
+                failure -> compensateRoleChange(userId, requestedRole, context, failure));
     }
 
     private AdminUserRoleResponse updateRoleWhileLocked(
@@ -86,6 +72,25 @@ public class AdminUserRoleService {
         auditPersistenceService.recordRoleChange(
                 userId, actorSubjectId, previousRole, requestedRole.name());
         return new AdminUserRoleResponse(userId, previousRole, requestedRole.name());
+    }
+
+    private void compensateRoleChange(
+            UUID userId,
+            UpdateAdminUserRoleRequest.Role requestedRole,
+            RoleChangeContext context,
+            RuntimeException failure) {
+        if (context.previousRole == null || context.previousRole.equals(requestedRole.name())) {
+            return;
+        }
+        try {
+            keycloakAdminClient.restoreClientRole(
+                    context.targetKeycloakSubjectId, "platform-api", context.previousRole);
+        } catch (RuntimeException compensationFailure) {
+            failure.addSuppressed(compensationFailure);
+            log.error("Role update compensation failed for application user id {}", userId, failure);
+            throw new AdminUserRoleCompensationException(failure);
+        }
+        throw new AdminUserRoleUpdateException(failure);
     }
 
     private static final class RoleChangeContext {
