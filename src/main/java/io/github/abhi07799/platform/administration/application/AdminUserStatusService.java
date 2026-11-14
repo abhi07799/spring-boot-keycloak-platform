@@ -34,24 +34,9 @@ public class AdminUserStatusService {
 
     public UserProfileResponse updateEnabledStatus(UUID userId, boolean enabled, String actorSubjectId) {
         StatusChangeContext context = new StatusChangeContext();
-        try {
-            return roleChangeLockService.withRoleChangeLock(
-                    () -> updateStatusWhileLocked(userId, enabled, actorSubjectId, context));
-        } catch (RuntimeException failure) {
-            if (context.previousEnabled == null) {
-                throw failure;
-            }
-            if (context.previousEnabled != enabled) {
-                try {
-                    keycloakAdminClient.restoreUserEnabled(context.targetKeycloakSubjectId, context.previousEnabled);
-                } catch (RuntimeException compensationFailure) {
-                    failure.addSuppressed(compensationFailure);
-                    log.error("Account status compensation failed for application user id {}", userId, failure);
-                    throw new AdminUserStatusCompensationException(compensationFailure);
-                }
-            }
-            throw new AdminUserStatusUpdateException(failure);
-        }
+        return roleChangeLockService.withRoleChangeLock(
+                () -> updateStatusWhileLocked(userId, enabled, actorSubjectId, context),
+                failure -> compensateStatusChange(userId, enabled, context, failure));
     }
 
     private UserProfileResponse updateStatusWhileLocked(
@@ -74,6 +59,23 @@ public class AdminUserStatusService {
         UserProfile savedProfile = auditPersistenceService.persistStatusChange(
                 userId, actorSubjectId, previousKeycloakEnabled, enabled);
         return UserProfileResponse.from(savedProfile);
+    }
+
+    private void compensateStatusChange(
+            UUID userId, boolean requestedEnabled, StatusChangeContext context, RuntimeException failure) {
+        if (context.previousEnabled == null) {
+            return;
+        }
+        if (context.previousEnabled != requestedEnabled) {
+            try {
+                keycloakAdminClient.restoreUserEnabled(context.targetKeycloakSubjectId, context.previousEnabled);
+            } catch (RuntimeException compensationFailure) {
+                failure.addSuppressed(compensationFailure);
+                log.error("Account status compensation failed for application user id {}", userId, failure);
+                throw new AdminUserStatusCompensationException(failure);
+            }
+        }
+        throw new AdminUserStatusUpdateException(failure);
     }
 
     private static final class StatusChangeContext {
