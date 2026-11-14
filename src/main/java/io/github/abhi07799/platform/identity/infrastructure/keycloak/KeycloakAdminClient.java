@@ -101,6 +101,15 @@ public class KeycloakAdminClient {
      * @return the previous platform-api role
      */
     public String updateClientRole(String userId, String clientId, String targetRole) {
+        return replaceClientRole(userId, clientId, targetRole, true);
+    }
+
+    /** Restores a previously known role after a failed application-side transaction. */
+    public String restoreClientRole(String userId, String clientId, String targetRole) {
+        return replaceClientRole(userId, clientId, targetRole, false);
+    }
+
+    private String replaceClientRole(String userId, String clientId, String targetRole, boolean protectLastAdmin) {
         if (!PLATFORM_ROLES.contains(targetRole)) {
             throw new IllegalArgumentException("Unsupported platform role: " + targetRole);
         }
@@ -120,7 +129,7 @@ public class KeycloakAdminClient {
             return previousRole.name();
         }
 
-        if ("ADMIN".equals(previousRole.name()) && !"ADMIN".equals(targetRole)) {
+        if (protectLastAdmin && "ADMIN".equals(previousRole.name()) && !"ADMIN".equals(targetRole)) {
             if (!hasAtLeastTwoEnabledAdministrators(clientUuid)) {
                 throw new KeycloakLastAdminException();
             }
