@@ -565,3 +565,29 @@ Administrative account changes need attributable, queryable history. Recording t
 
 **Verification**
 Tests were added but not executed because Maven is unavailable in this environment. Run `mvn test` with JDK 21 and Maven, apply Flyway V3, then provision/disable/re-enable an account and verify the events through the ADMIN audit endpoint.
+
+
+## Step 3.12 — ADMIN role management
+
+**What we implemented**
+- Added `PATCH /api/v1/admin/users/{userId}/role`, restricted by the existing `ROLE_ADMIN` policy.
+- Accepts only `USER`, `STAFF`, or `ADMIN` and replaces only the target user's `platform-api` client role. Realm roles and roles belonging to other clients are left untouched.
+- Reads the current platform role before changing it, assigns the requested role, then removes the previous role. If removing the previous mapping fails, it attempts to remove the newly added mapping.
+- Prevents an administrator from changing their own role and prevents demotion of the last enabled `platform-api/ADMIN` user.
+- Serializes role changes across application instances with a PostgreSQL row lock. The lock is held across the Keycloak role operation and audit transaction, preventing concurrent demotions from bypassing the last-admin check.
+- Adds Flyway V4 fields and constraints for previous/new roles and records `USER_ROLE_CHANGED` events with the actor JWT subject and target profile ID.
+- Adds Flyway V5 singleton lock row. Uses `TransactionTemplate` so database commit failures are visible to the service; if audit persistence or transaction commit fails after Keycloak changes, the service attempts to restore the previous Keycloak role.
+- Adds Keycloak client, application service, and controller authorization tests.
+
+**Why**
+Application roles are client roles owned by `platform-api`. Updating a role must not accidentally remove mappings from other clients or realm-level permissions. The last enabled administrator must remain available to manage the application, and role changes need the same attributable audit history as provisioning and account-status changes.
+
+**Important concepts**
+- **Client role mapping:** Keycloak stores `USER`, `STAFF`, and `ADMIN` as roles on the `platform-api` client. The API replaces only one of these mappings.
+- **Last-admin invariant:** Keycloak's client-role users endpoint is queried for enabled ADMIN members. A database row lock serializes concurrent role changes across application instances while this check is performed.
+- **Cross-system consistency:** Keycloak and PostgreSQL do not share a distributed transaction. The application commits the audit record inside the locked database transaction and compensates the Keycloak role if the database transaction fails.
+- **Self-protection:** the authenticated administrator's JWT subject is compared with the target profile's Keycloak subject; the actor cannot alter their own application role.
+- **Least privilege:** the service account needs narrowly scoped user/client query and role-mapping permissions. Verify exact Keycloak 26.8.2 permissions locally; never grant `realm-admin`.
+
+**Verification**
+Tests were added but not executed because Maven is unavailable in this environment. Run `mvn test` with JDK 21 and Maven. Apply Flyway V4 and V5, verify the service account can read client role mappings and role members, then test USER↔STAFF, STAFF↔ADMIN, last-admin protection, self-role protection, and audit rollback against Keycloak/PostgreSQL.
