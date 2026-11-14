@@ -231,4 +231,4 @@ Swagger UI is a browser-based public OAuth client. PKCE protects the authorizati
 - `LEARNING.md`
 
 **Verification**
-Springdoc's documented Swagger UI OAuth properties and Keycloak's OIDC authorization/token endpoint paths were checked. The OpenAPI configuration has focused unit tests. Maven, Docker, and a running Keycloak/browser environment are unavailable here; compilation, tests, redirect URI matching, PKCE exchange, and end-to-end API invocation must be verified locally.
+Springdoc's documented Swagger UI OAuth properties and Keycloak's OIDC authorization/token endpoint paths were checked. The OpenAPI authorization/token endpoint configuration has focused unit tests. The ping handler is annotated as public in the OpenAPI description. Maven, Docker, and a running Keycloak/browser environment are unavailable here; compilation, tests, redirect URI matching, PKCE exchange, and end-to-end API invocation must be verified locally.
