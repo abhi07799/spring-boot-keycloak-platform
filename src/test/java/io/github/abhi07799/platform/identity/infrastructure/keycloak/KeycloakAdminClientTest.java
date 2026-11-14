@@ -93,7 +93,9 @@ class KeycloakAdminClientTest {
                 .andExpect(method(HttpMethod.GET))
                 .andExpect(header("Authorization", "Bearer service-token"))
                 .andRespond(withSuccess(
-                        "{\\"id\\":\\"user-123\\",\\"username\\":\\"person@example.com\\",\\"email\\":\\"person@example.com\\",\\"enabled\\":true}",
+                        """
+                        {"id":"user-123","username":"person@example.com","email":"person@example.com","enabled":true}
+                        """,
                         MediaType.APPLICATION_JSON));
 
         server.expect(requestTo("http://localhost:8081/admin/realms/platform/users/user-123"))
