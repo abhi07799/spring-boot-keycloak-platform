@@ -1,6 +1,7 @@
 package io.github.abhi07799.platform.administration.api;
 
 import io.github.abhi07799.platform.administration.application.AdminUserNotFoundException;
+import io.github.abhi07799.platform.administration.application.KeycloakAccountStatusUpdateException;
 import io.github.abhi07799.platform.administration.application.AdminUserStatusCompensationException;
 import io.github.abhi07799.platform.administration.application.AdminUserStatusUpdateException;
 import org.springframework.http.HttpStatus;
@@ -17,10 +18,16 @@ public class AdminUserExceptionHandler {
         return problem(HttpStatus.NOT_FOUND, exception.getMessage());
     }
 
-    @ExceptionHandler(AdminUserStatusUpdateException.class)
-    ResponseEntity<ProblemDetail> handleStatusUpdateFailure(AdminUserStatusUpdateException exception) {
+    @ExceptionHandler(KeycloakAccountStatusUpdateException.class)
+    ResponseEntity<ProblemDetail> handleKeycloakStatusUpdateFailure(KeycloakAccountStatusUpdateException exception) {
         return problem(HttpStatus.BAD_GATEWAY,
-                "The account status could not be synchronized. Please try again later.");
+                "The identity provider could not update the account status. Please try again later.");
+    }
+
+    @ExceptionHandler(AdminUserStatusUpdateException.class)
+    ResponseEntity<ProblemDetail> handleStatusPersistenceFailure(AdminUserStatusUpdateException exception) {
+        return problem(HttpStatus.INTERNAL_SERVER_ERROR,
+                "The account status could not be persisted. Please try again later.");
     }
 
     @ExceptionHandler(AdminUserStatusCompensationException.class)
