@@ -52,6 +52,22 @@ class RegistrationServiceTest {
         order.verify(keycloakAdminClient).createUser(any());
         order.verify(keycloakAdminClient).assignClientRole("keycloak-user-123", "platform-api", "USER");
         order.verify(userProfileRepository).saveAndFlush(any());
+        order.verify(keycloakAdminClient).sendVerifyEmail("keycloak-user-123");
+        verify(keycloakAdminClient, never()).deleteUser(any());
+    }
+
+    @Test
+    void keepsRegistrationSuccessfulWhenVerificationEmailDeliveryFails() {
+        when(userProfileRepository.existsByEmailIgnoreCase("person@example.com")).thenReturn(false);
+        when(keycloakAdminClient.createUser(any())).thenReturn("keycloak-user-123");
+        when(userProfileRepository.saveAndFlush(any())).thenAnswer(invocation -> invocation.getArgument(0));
+        org.mockito.Mockito.doThrow(new IllegalStateException("SMTP unavailable"))
+                .when(keycloakAdminClient).sendVerifyEmail("keycloak-user-123");
+
+        RegistrationResponse response = registrationService.register(validRequest());
+
+        assertThat(response.email()).isEqualTo("person@example.com");
+        verify(userProfileRepository).saveAndFlush(any());
         verify(keycloakAdminClient, never()).deleteUser(any());
     }
 

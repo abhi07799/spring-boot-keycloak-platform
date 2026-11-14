@@ -23,7 +23,7 @@ public class RegistrationExceptionHandler {
         String detail = exception.getBindingResult().getFieldErrors().stream()
                 .findFirst()
                 .map(error -> error.getField() + ": " + error.getDefaultMessage())
-                .orElse("The registration request is invalid");
+                .orElse("The request is invalid");
         return problem(HttpStatus.BAD_REQUEST, detail);
     }
 

@@ -49,6 +49,7 @@ keycloak:
   admin:
     base-url: ${KEYCLOAK_ADMIN_BASE_URL:http://localhost:8081}
     realm: ${KEYCLOAK_ADMIN_REALM:platform}
+    action-token-lifespan-seconds: ${KEYCLOAK_ACTION_TOKEN_LIFESPAN_SECONDS:900}
 
 server:
   port: 8080

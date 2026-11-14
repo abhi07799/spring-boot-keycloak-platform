@@ -5,9 +5,9 @@
   "registrationAllowed": false,
   "loginWithEmailAllowed": true,
   "duplicateEmailsAllowed": false,
-  "resetPasswordAllowed": false,
+  "resetPasswordAllowed": true,
   "rememberMe": true,
-  "verifyEmail": false,
+  "verifyEmail": true,
   "clients": [
     {
       "clientId": "platform-api",

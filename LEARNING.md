@@ -616,3 +616,28 @@ The API validates JWTs locally and does not maintain server-side HTTP sessions. 
 
 **Verification**
 Tests were added but not executed because Maven is unavailable in this environment. Run mvn test with JDK 21 and Maven, apply Flyway V6, then verify self logout, ADMIN force logout, audit history, and rejection of a previously issued access token against live Keycloak 26.8.2/PostgreSQL.
+
+## Step 3.14 — Password reset and email verification
+
+**What we implemented**
+- Enabled Keycloak realm settings `verifyEmail=true` and `resetPasswordAllowed=true`. New registrations remain `emailVerified=false`.
+- After persisting a newly registered or ADMIN-provisioned profile, the backend asks Keycloak to send its built-in email-verification action link. If SMTP delivery fails, account creation remains successful and the user can request a resend.
+- Added public `POST /api/v1/auth/password/forgot`. It requests Keycloak's built-in `UPDATE_PASSWORD` action email; the application never receives or stores a replacement password.
+- Added public `POST /api/v1/auth/email/verification/resend`. It sends another verification email only for an enabled account whose Keycloak email is not yet verified.
+- Both recovery endpoints return the same generic HTTP 202 message for unknown, disabled, and eligible email addresses. Provider failures are logged against the application profile ID without logging the email address, and are not disclosed to the caller.
+- Configured a 900-second (15-minute) action-token lifetime by default, overridable with `KEYCLOAK_ACTION_TOKEN_LIFESPAN_SECONDS`.
+- Added Keycloak Admin REST client tests, recovery service tests, controller tests, and registration email-delivery tests.
+- Enabled email verification and password reset in the realm export, and documented SMTP setup without committing SMTP credentials.
+
+**Why**
+Credentials and email action tokens belong to Keycloak. The backend initiates the built-in flows but never implements password storage, token validation, or password updates itself. Generic recovery responses reduce direct account enumeration through status codes and response bodies.
+
+**Important concepts**
+- **Email verification:** Keycloak sends a one-time action link. The realm requires verification before normal login; the application does not treat a newly created email as verified.
+- **Password reset:** the backend asks Keycloak to send the `UPDATE_PASSWORD` required action. The user chooses a new password on Keycloak's trusted action page.
+- **Enumeration resistance:** both endpoints return HTTP 202 with the same message regardless of whether an eligible profile was found. This does not eliminate timing side channels; production deployments must add API-gateway rate limits, abuse monitoring, and mail-provider limits.
+- **SMTP ownership:** SMTP configuration is performed in Keycloak Realm settings and is intentionally not stored in this repository. Existing realms are not overwritten by startup import; apply the realm setting changes manually if the realm already existed.
+- **Action-token lifetime:** 900 seconds by default. Expired links require the user to request a new message.
+
+**Verification**
+Tests were added but not executed because Maven is unavailable in this environment. Run `mvn test` with JDK 21 and Maven. Configure and test SMTP in Keycloak 26.8.2, then verify registration email delivery, verification-required login, resend behavior, password-reset email, action-link expiry, and successful login with the updated password.

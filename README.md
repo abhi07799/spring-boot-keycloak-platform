@@ -37,7 +37,9 @@ The backend is a Maven-based Spring MVC application secured as a stateless OAuth
 
 The backend uses KEYCLOAK_ADMIN_BASE_URL=http://localhost:8081 and realm platform by default. If running the backend inside Compose, use http://keycloak:8080 for the admin base URL and ensure the configured issuer/token endpoint is reachable from that container.
 
-- Registration endpoint: `POST http://localhost:8080/api/v1/auth/register` (public; assigns only `USER`).
+- Registration endpoint: `POST http://localhost:8080/api/v1/auth/register` (public; assigns only `USER` and sends a Keycloak email-verification link).
+- Password reset request: `POST http://localhost:8080/api/v1/auth/password/forgot` (public; generic 202 response; Keycloak emails a one-time password-update link).
+- Resend verification email: `POST http://localhost:8080/api/v1/auth/email/verification/resend` (public; generic 202 response).
 - Current-user logout: `POST http://localhost:8080/api/v1/auth/logout` (authenticated; terminates all Keycloak sessions for the JWT subject).
 - Admin force logout: `POST http://localhost:8080/api/v1/admin/users/{userId}/logout` (ADMIN only; terminates all sessions for the target user).
 - Current user profile: `GET http://localhost:8080/api/v1/users/me` (authenticated; resolves the profile from the JWT subject).
@@ -51,6 +53,8 @@ The backend uses KEYCLOAK_ADMIN_BASE_URL=http://localhost:8081 and realm platfor
 - Swagger UI: http://localhost:8080/swagger-ui.html (Keycloak OAuth2 + PKCE)
 - OpenAPI JSON: http://localhost:8080/v3/api-docs
 - Actuator health: http://localhost:8080/actuator/health
+
+The imported Keycloak realm requires verified email addresses for login and enables its built-in password-reset flow. Both public registration and ADMIN provisioning request a verification email after profile persistence. Configure SMTP in Keycloak before testing registration, verification, or password reset. Password reset and verification action links expire after 15 minutes by default.
 
 Administrative provisioning, account status changes, role changes, and session revocations are recorded in the application database audit log. Successful logout also advances the profile authorization timestamp, so the resource server rejects previously issued access tokens on their next request. Logout is user-wide; clients must discard their locally held tokens after receiving the successful response. The last enabled ADMIN cannot be demoted or disabled, and ADMIN provisioning is serialized with role and status changes. Events record the acting JWT subject, target application profile ID, action, event time, and assigned role, before/after enabled state, or before/after application role. Passwords, tokens, and profile PII are not stored in audit events.
 

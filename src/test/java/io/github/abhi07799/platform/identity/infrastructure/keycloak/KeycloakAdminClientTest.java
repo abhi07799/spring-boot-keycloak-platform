@@ -33,7 +33,7 @@ class KeycloakAdminClientTest {
         server = MockRestServiceServer.bindTo(builder).build();
         tokenProvider = mock(KeycloakAdminTokenProvider.class);
         when(tokenProvider.getAccessToken()).thenReturn("service-token");
-        client = new KeycloakAdminClient(tokenProvider, builder, "http://localhost:8081", "platform");
+        client = new KeycloakAdminClient(tokenProvider, builder, "http://localhost:8081", "platform", 900);
     }
 
     @Test
@@ -63,6 +63,49 @@ class KeycloakAdminClientTest {
                 .andRespond(withStatus(HttpStatus.NO_CONTENT));
 
         client.logoutUser("user-123");
+        server.verify();
+    }
+
+    @Test
+    void sendsPasswordResetActionEmailWithConfiguredLifespan() {
+        server.expect(requestTo("http://localhost:8081/admin/realms/platform/users/user-123/execute-actions-email?lifespan=900"))
+                .andExpect(method(HttpMethod.PUT))
+                .andExpect(header("Authorization", "Bearer service-token"))
+                .andExpect(content().json("[\"UPDATE_PASSWORD\"]"))
+                .andRespond(withStatus(HttpStatus.NO_CONTENT));
+
+        client.sendPasswordResetEmail("user-123");
+        server.verify();
+    }
+
+    @Test
+    void sendsEmailVerificationActionEmailWithConfiguredLifespan() {
+        server.expect(requestTo("http://localhost:8081/admin/realms/platform/users/user-123/send-verify-email?lifespan=900"))
+                .andExpect(method(HttpMethod.PUT))
+                .andExpect(header("Authorization", "Bearer service-token"))
+                .andRespond(withStatus(HttpStatus.NO_CONTENT));
+
+        client.sendVerifyEmail("user-123");
+        server.verify();
+    }
+
+    @Test
+    void readsEmailVerificationStateFromKeycloakUserRepresentation() {
+        server.expect(requestTo("http://localhost:8081/admin/realms/platform/users/user-123"))
+                .andExpect(method(HttpMethod.GET))
+                .andRespond(withSuccess("{\"id\":\"user-123\",\"emailVerified\":true}", MediaType.APPLICATION_JSON));
+
+        assertThat(client.isEmailVerified("user-123")).isTrue();
+        server.verify();
+    }
+
+    @Test
+    void treatsOmittedEmailVerifiedFieldAsNotVerified() {
+        server.expect(requestTo("http://localhost:8081/admin/realms/platform/users/user-123"))
+                .andExpect(method(HttpMethod.GET))
+                .andRespond(withSuccess("{\"id\":\"user-123\"}", MediaType.APPLICATION_JSON));
+
+        assertThat(client.isEmailVerified("user-123")).isFalse();
         server.verify();
     }
 

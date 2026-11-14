@@ -125,6 +125,12 @@ public class AdminUserProvisioningService {
         UserProfile profile = auditPersistenceService.persistProvisionedUser(
                 new UserProfile(keycloakUserId, fullName, normalizedEmail, mobileNumber),
                 actorSubjectId, role);
+        try {
+            keycloakAdminClient.sendVerifyEmail(keycloakUserId);
+        } catch (RuntimeException emailFailure) {
+            log.warn("Could not send initial verification email for provisioned Keycloak user id {}",
+                    keycloakUserId, emailFailure);
+        }
         return new RegistrationResponse(
                 profile.getId(), profile.getFullName(), profile.getEmail(), profile.getCreatedAt());
     }
