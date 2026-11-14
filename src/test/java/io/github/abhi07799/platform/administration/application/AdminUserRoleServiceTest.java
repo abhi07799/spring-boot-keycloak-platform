@@ -97,14 +97,14 @@ class AdminUserRoleServiceTest {
                 .thenReturn("USER");
         org.mockito.Mockito.doThrow(new IllegalStateException("audit unavailable"))
                 .when(auditPersistenceService).recordRoleChange(USER_ID, ACTOR_SUBJECT, "USER", "STAFF");
-        when(keycloakAdminClient.updateClientRole(TARGET_SUBJECT, "platform-api", "USER"))
+        when(keycloakAdminClient.restoreClientRole(TARGET_SUBJECT, "platform-api", "USER"))
                 .thenReturn("STAFF");
 
         assertThatThrownBy(() -> service.updateRole(
                 USER_ID, UpdateAdminUserRoleRequest.Role.STAFF, ACTOR_SUBJECT))
                 .isInstanceOf(AdminUserRoleUpdateException.class);
 
-        verify(keycloakAdminClient).updateClientRole(TARGET_SUBJECT, "platform-api", "USER");
+        verify(keycloakAdminClient).restoreClientRole(TARGET_SUBJECT, "platform-api", "USER");
     }
 
     private UserProfile profile() {
