@@ -52,6 +52,41 @@ The confidential client is imported with service accounts enabled and without a 
 
 Keycloak 26.8.2 applies additional restrictions to protocol-mapper administration. This service account is not intended to create or modify clients, client scopes, or protocol mappers. Those are infrastructure/bootstrap responsibilities.
 
+## Backend Admin REST API integration
+
+The backend uses the platform-admin-service confidential client with the OAuth 2.0 Client Credentials grant. The client belongs to the platform realm, has service accounts enabled, and authenticates with HTTP Basic client authentication. The backend obtains a service-account access token from the realm token endpoint and calls the Admin REST API with that bearer token.
+
+For the current backend operations, grant the service account only the realm-management client roles required to:
+- Create users (manage-users).
+- Query users if/when the registration workflow needs lookup (query-users, view-users).
+- Resolve the platform-api client and its roles (query-clients, view-clients).
+
+Keycloak's authorization model can vary with fine-grained admin permissions and realm configuration. Verify each operation in the local Keycloak 26.8.2 instance; do not grant realm-admin as a shortcut. Role-mapping operations may require an additional narrowly scoped permission depending on the Keycloak admin-permission configuration.
+
+The backend integration currently provides internal methods to create a user and assign a client role. It does not expose these privileged methods through an HTTP controller in this milestone.
+
+### Local backend environment
+
+The Spring Boot process does not automatically load the Compose .env file. After copying the generated service-account secret into the ignored .env, export it in the shell that starts the backend:
+
+Bash:
+```bash
+export KEYCLOAK_ADMIN_SERVICE_CLIENT_SECRET='your-generated-client-secret'
+export KEYCLOAK_ADMIN_BASE_URL=http://localhost:8081
+export KEYCLOAK_ADMIN_REALM=platform
+```
+
+PowerShell:
+```powershell
+$env:KEYCLOAK_ADMIN_SERVICE_CLIENT_SECRET = "your-generated-client-secret"
+$env:KEYCLOAK_ADMIN_BASE_URL = "http://localhost:8081"
+$env:KEYCLOAK_ADMIN_REALM = "platform"
+```
+
+When the backend itself runs inside the Compose network, set KEYCLOAK_ADMIN_BASE_URL=http://keycloak:8080. The issuer/token URL must also be reachable from the backend and must match the realm issuer used by the Keycloak instance.
+
+Never log the client secret or access token, and never send them to Swagger UI or a browser.
+
 ## Security notes
 
 - Never expose the confidential service-account secret to Swagger UI or a browser.

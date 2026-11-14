@@ -41,6 +41,18 @@ Local settings:
 
 The ping operation is marked public in the OpenAPI description. Secured operations inherit the OAuth2 security requirement. Do not enable authorization persistence in the browser, add a client secret, or use implicit/password grants.
 
+## Backend-to-Keycloak service authentication
+
+The backend uses a separate OAuth2 client registration named keycloak-admin for the confidential platform-admin-service client. It uses the Client Credentials grant and the realm's token endpoint. Spring Security's OAuth2AuthorizedClientManager obtains and reuses the service-account access token; the Keycloak Admin REST client sends it only in the Authorization bearer header.
+
+Required environment variables:
+- KEYCLOAK_ADMIN_SERVICE_CLIENT_SECRET: generated secret from Keycloak's Clients → Platform Admin Service → Credentials page.
+- KEYCLOAK_ADMIN_BASE_URL: Keycloak server origin; defaults to http://localhost:8081. Use http://keycloak:8080 from another container on the Compose network.
+- KEYCLOAK_ADMIN_REALM: defaults to platform.
+- KEYCLOAK_ADMIN_TOKEN_URI: optional token endpoint override; defaults to the local platform realm token endpoint.
+
+The Admin API client supports creating a Keycloak user and assigning a client role by resolving the Keycloak internal client UUID first. These are internal service methods, not public endpoints. User-registration orchestration and authorization policy will be added in later milestones.
+
 ## Local configuration
 
 The default issuer is configured in `application.yaml`. Override it when necessary:
