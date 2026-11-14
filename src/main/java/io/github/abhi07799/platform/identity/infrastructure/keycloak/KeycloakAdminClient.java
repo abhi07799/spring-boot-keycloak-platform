@@ -51,7 +51,7 @@ public class KeycloakAdminClient {
         return userId;
     }
 
-    public void updateUserEnabled(String userId, boolean enabled) {
+    public boolean updateUserEnabled(String userId, boolean enabled) {
         Map<String, Object> user = restClient.get()
                 .uri("/admin/realms/{realm}/users/{userId}", realm, userId)
                 .header(HttpHeaders.AUTHORIZATION, bearerToken())
@@ -62,6 +62,11 @@ public class KeycloakAdminClient {
             throw new IllegalStateException("Keycloak user representation was not found: " + userId);
         }
 
+        Object enabledValue = user.get("enabled");
+        if (!(enabledValue instanceof Boolean previousEnabled)) {
+            throw new IllegalStateException("Keycloak user representation did not include an enabled flag: " + userId);
+        }
+
         user.put("enabled", enabled);
         restClient.put()
                 .uri("/admin/realms/{realm}/users/{userId}", realm, userId)
@@ -70,6 +75,7 @@ public class KeycloakAdminClient {
                 .body(user)
                 .retrieve()
                 .toBodilessEntity();
+        return previousEnabled;
     }
 
     public void deleteUser(String userId) {
