@@ -33,26 +33,29 @@ class AdminUserProvisioningServiceTest {
     @Mock
     private UserProfileRepository userProfileRepository;
 
+    @Mock
+    private AdminAuditPersistenceService auditPersistenceService;
+
     private AdminUserProvisioningService service;
 
     @BeforeEach
     void setUp() {
-        service = new AdminUserProvisioningService(keycloakAdminClient, userProfileRepository);
+        service = new AdminUserProvisioningService(keycloakAdminClient, userProfileRepository, auditPersistenceService);
     }
 
     @Test
     void provisionsOnlyTheRequestedPrivilegedRoleAndPersistsProfile() {
         when(userProfileRepository.existsByEmailIgnoreCase("person@example.com")).thenReturn(false);
         when(keycloakAdminClient.createUser(any())).thenReturn("keycloak-user-123");
-        when(userProfileRepository.saveAndFlush(any())).thenAnswer(invocation -> invocation.getArgument(0));
+        when(auditPersistenceService.persistProvisionedUser(any(), any(), any())).thenAnswer(invocation -> invocation.getArgument(0));
 
-        RegistrationResponse response = service.provision(request(AdminUserProvisioningRequest.ProvisionedRole.STAFF));
+        RegistrationResponse response = service.provision(request(AdminUserProvisioningRequest.ProvisionedRole.STAFF), "admin-subject");
 
         assertThat(response.email()).isEqualTo("person@example.com");
-        InOrder order = inOrder(keycloakAdminClient, userProfileRepository);
+        InOrder order = inOrder(keycloakAdminClient, auditPersistenceService);
         order.verify(keycloakAdminClient).createUser(any());
         order.verify(keycloakAdminClient).assignClientRole("keycloak-user-123", "platform-api", "STAFF");
-        order.verify(userProfileRepository).saveAndFlush(any());
+        order.verify(auditPersistenceService).persistProvisionedUser(any(), org.mockito.ArgumentMatchers.eq("admin-subject"), org.mockito.ArgumentMatchers.eq("STAFF"));
         verify(keycloakAdminClient, never()).deleteUser(any());
     }
 
@@ -62,7 +65,7 @@ class AdminUserProvisioningServiceTest {
         when(keycloakAdminClient.createUser(any())).thenReturn("keycloak-user-123");
         when(userProfileRepository.saveAndFlush(any())).thenAnswer(invocation -> invocation.getArgument(0));
 
-        service.provision(request(AdminUserProvisioningRequest.ProvisionedRole.ADMIN));
+        service.provision(request(AdminUserProvisioningRequest.ProvisionedRole.ADMIN), "admin-subject");
 
         verify(keycloakAdminClient).assignClientRole("keycloak-user-123", "platform-api", "ADMIN");
     }
@@ -86,7 +89,7 @@ class AdminUserProvisioningServiceTest {
         assertThatThrownBy(() -> service.provision(request(AdminUserProvisioningRequest.ProvisionedRole.STAFF)))
                 .isInstanceOf(RegistrationFailedException.class);
         verify(keycloakAdminClient).deleteUser("keycloak-user-123");
-        verify(userProfileRepository, never()).saveAndFlush(any());
+        verify(auditPersistenceService, never()).persistProvisionedUser(any(), any(), any());
     }
 
     @Test
