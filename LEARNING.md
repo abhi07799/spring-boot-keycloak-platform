@@ -576,7 +576,7 @@ Tests were added but not executed because Maven is unavailable in this environme
 - Prevents an administrator from changing their own role and prevents demotion of the last enabled `platform-api/ADMIN` user.
 - Serializes role changes across application instances with a PostgreSQL row lock. The lock is held across the Keycloak role operation and audit transaction, preventing concurrent demotions from bypassing the last-admin check.
 - Adds Flyway V4 fields and constraints for previous/new roles and records `USER_ROLE_CHANGED` events with the actor JWT subject and target profile ID.
-- Adds Flyway V5 singleton lock row. Uses `TransactionTemplate` so database commit failures are visible to the service; if audit persistence or transaction commit fails after Keycloak changes, the service attempts to restore the previous Keycloak role.
+- Uses `TransactionTemplate` so database commit failures are visible before the session advisory lock is released; if audit persistence or transaction commit fails after Keycloak changes, the service attempts to restore the previous Keycloak role.
 - Adds Keycloak client, application service, and controller authorization tests.
 
 **Why**
