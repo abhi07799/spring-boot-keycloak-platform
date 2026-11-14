@@ -13,7 +13,7 @@ public class AccountStatusJwtValidator implements OAuth2TokenValidator<Jwt> {
 
     private static final OAuth2Error INVALID_ACCOUNT = new OAuth2Error(
             "invalid_token",
-            "The account is disabled or has no application profile.",
+            "The account is disabled, has no application profile, or the token predates an authorization change.",
             null);
 
     private final UserProfileRepository userProfileRepository;
@@ -31,6 +31,11 @@ public class AccountStatusJwtValidator implements OAuth2TokenValidator<Jwt> {
 
         Optional<UserProfile> profile = userProfileRepository.findByKeycloakSubjectId(subject);
         if (profile.isEmpty() || !profile.get().isEnabled()) {
+            return OAuth2TokenValidatorResult.failure(INVALID_ACCOUNT);
+        }
+
+        if (jwt.getIssuedAt() == null
+                || !jwt.getIssuedAt().isAfter(profile.get().getAuthorizationUpdatedAt())) {
             return OAuth2TokenValidatorResult.failure(INVALID_ACCOUNT);
         }
 
