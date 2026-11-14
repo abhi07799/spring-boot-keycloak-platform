@@ -61,4 +61,4 @@ Keycloak starts only after `keycloak-db` is healthy. The application database is
 - `.gitignore` (corrected an initial rule that would have ignored Maven's `pom.xml`)
 
 **Verification**
-Compose configuration and live container health still need to be checked on a machine with Docker Compose v2. This environment can verify GitHub file writes but cannot truthfully claim that the containers have been started.
+The Compose YAML was parsed successfully and its three services, two named volumes, and two networks were inspected. Docker Compose is not installed in this execution environment, so `docker compose config`, image pulls, container startup, and live health checks remain to be run on a machine with Docker Compose v2. No live-container success is claimed.
