@@ -17,9 +17,11 @@ import org.springframework.security.oauth2.jwt.JwtException;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -65,6 +67,69 @@ class UserProfileControllerTest {
         mockMvc.perform(get("/api/v1/users/me").with(jwt().jwt(token -> token.subject(SUBJECT_ID))))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.title").value("Not Found"));
+    }
+
+    @Test
+    void updatesOnlyTheAuthenticatedUsersEditableProfileFields() throws Exception {
+        UserProfile updated = new UserProfile(
+                SUBJECT_ID, "Updated Person", "person@example.com", "+919999999999");
+        when(userProfileService.updateProfile(SUBJECT_ID, "Updated Person", "+919999999999"))
+                .thenReturn(updated);
+
+        mockMvc.perform(put("/api/v1/users/me")
+                        .with(jwt().jwt(token -> token.subject(SUBJECT_ID)))
+                        .contentType("application/json")
+                        .content("""
+                                {
+                                  "fullName": "Updated Person",
+                                  "mobileNumber": "+919999999999"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.fullName").value("Updated Person"))
+                .andExpect(jsonPath("$.mobileNumber").value("+919999999999"))
+                .andExpect(jsonPath("$.email").value("person@example.com"))
+                .andExpect(jsonPath("$.keycloakSubjectId").doesNotExist())
+                .andExpect(jsonPath("$.password").doesNotExist());
+
+        verify(userProfileService).updateProfile(SUBJECT_ID, "Updated Person", "+919999999999");
+    }
+
+    @Test
+    void rejectsUnauthenticatedProfileUpdates() throws Exception {
+        mockMvc.perform(put("/api/v1/users/me"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void validatesProfileUpdatePayload() throws Exception {
+        mockMvc.perform(put("/api/v1/users/me")
+                        .with(jwt().jwt(token -> token.subject(SUBJECT_ID)))
+                        .contentType("application/json")
+                        .content("""
+                                {
+                                  "fullName": "Updated Person",
+                                  "mobileNumber": "not-a-phone"
+                                }
+                                """))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void returnsNotFoundWhenUpdatingProfileWithoutAnApplicationRecord() throws Exception {
+        when(userProfileService.updateProfile(SUBJECT_ID, "Updated Person", "+919999999999"))
+                .thenThrow(new UserProfileNotFoundException());
+
+        mockMvc.perform(put("/api/v1/users/me")
+                        .with(jwt().jwt(token -> token.subject(SUBJECT_ID)))
+                        .contentType("application/json")
+                        .content("""
+                                {
+                                  "fullName": "Updated Person",
+                                  "mobileNumber": "+919999999999"
+                                }
+                                """))
+                .andExpect(status().isNotFound());
     }
 
     @TestConfiguration
