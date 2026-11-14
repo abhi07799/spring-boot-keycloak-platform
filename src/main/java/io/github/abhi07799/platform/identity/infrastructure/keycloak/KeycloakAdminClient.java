@@ -50,6 +50,14 @@ public class KeycloakAdminClient {
         return userId;
     }
 
+    public void deleteUser(String userId) {
+        restClient.delete()
+                .uri("/admin/realms/{realm}/users/{userId}", realm, userId)
+                .header(HttpHeaders.AUTHORIZATION, bearerToken())
+                .retrieve()
+                .toBodilessEntity();
+    }
+
     public void assignClientRole(String userId, String clientId, String roleName) {
         List<KeycloakClientReference> clients = restClient.get()
                 .uri(uriBuilder -> uriBuilder
