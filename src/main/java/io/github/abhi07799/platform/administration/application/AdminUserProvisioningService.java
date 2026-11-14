@@ -50,23 +50,21 @@ public class AdminUserProvisioningService {
     private RegistrationResponse provisionAdminWhileLocked(
             AdminUserProvisioningRequest request, String actorSubjectId) {
         ProvisioningContext context = new ProvisioningContext();
-        try {
-            return roleChangeLockService.withRoleChangeLock(
-                    () -> provisionUser(request, actorSubjectId, context));
-        } catch (DataIntegrityViolationException exception) {
-            if (context.keycloakUserId == null) {
-                throw exception;
-            }
-            compensateKeycloakUser(context.keycloakUserId, exception);
-            throw new EmailAlreadyRegisteredException();
-        } catch (RuntimeException exception) {
-            if (context.keycloakUserId == null) {
-                throw exception;
-            }
-            compensateKeycloakUser(context.keycloakUserId, exception);
-            throw new RegistrationFailedException(
-                    "User provisioning could not be completed. Please try again later.", exception);
+        return roleChangeLockService.withRoleChangeLock(
+                () -> provisionUser(request, actorSubjectId, context),
+                failure -> compensateAdminProvisioning(context, failure));
+    }
+
+    private void compensateAdminProvisioning(ProvisioningContext context, RuntimeException failure) {
+        if (context.keycloakUserId == null) {
+            return;
         }
+        compensateKeycloakUser(context.keycloakUserId, failure);
+        if (failure instanceof DataIntegrityViolationException) {
+            throw new EmailAlreadyRegisteredException();
+        }
+        throw new RegistrationFailedException(
+                "User provisioning could not be completed. Please try again later.", failure);
     }
 
     private RegistrationResponse provisionUser(
