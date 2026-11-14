@@ -1,7 +1,6 @@
 package io.github.abhi07799.platform.identity.infrastructure.keycloak;
 
 import java.net.URI;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -122,8 +121,7 @@ public class KeycloakAdminClient {
         }
 
         if ("ADMIN".equals(previousRole.name()) && !"ADMIN".equals(targetRole)) {
-            List<Map<String, Object>> administrators = getClientRoleUsers(clientUuid, "ADMIN", 2);
-            if (administrators.size() <= 1) {
+            if (!hasAtLeastTwoEnabledAdministrators(clientUuid)) {
                 throw new KeycloakLastAdminException();
             }
         }
@@ -183,17 +181,37 @@ public class KeycloakAdminClient {
         return roles == null ? List.of() : roles;
     }
 
-    private List<Map<String, Object>> getClientRoleUsers(String clientUuid, String roleName, int max) {
+    private boolean hasAtLeastTwoEnabledAdministrators(String clientUuid) {
+        int first = 0;
+        int enabledCount = 0;
+        int pageSize = 100;
+        while (true) {
+            List<Map<String, Object>> users = getClientRoleUsers(clientUuid, "ADMIN", first, pageSize);
+            if (users == null || users.isEmpty()) {
+                return false;
+            }
+            enabledCount += (int) users.stream().filter(user -> Boolean.TRUE.equals(user.get("enabled"))).count();
+            if (enabledCount >= 2) {
+                return true;
+            }
+            if (users.size() < pageSize) {
+                return false;
+            }
+            first += users.size();
+        }
+    }
+
+    private List<Map<String, Object>> getClientRoleUsers(String clientUuid, String roleName, int first, int max) {
         List<Map<String, Object>> users = restClient.get()
                 .uri(uriBuilder -> uriBuilder
                         .path("/admin/realms/{realm}/clients/{clientUuid}/roles/{roleName}/users")
-                        .queryParam("first", 0)
+                        .queryParam("first", first)
                         .queryParam("max", max)
                         .build(realm, clientUuid, roleName))
                 .header(HttpHeaders.AUTHORIZATION, bearerToken())
                 .retrieve()
                 .body(new ParameterizedTypeReference<>() { });
-        return users == null ? List.of() : users;
+        return users;
     }
 
     private void addClientRoleMapping(
