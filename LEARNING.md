@@ -271,3 +271,49 @@ The backend needs a server-to-server identity to perform privileged identity lif
 
 **Verification**
 Dependency coordinates were checked against the Spring Boot 4.1.2 managed dependency list. Keycloak Client Credentials and Admin REST API endpoint behavior were checked against Keycloak 26.8 documentation. Unit tests were added but cannot be executed here because Maven is not installed. A live Keycloak test is also pending; confirm the actual role-mapping permissions with the local Keycloak 26.8.2 realm and its service-account configuration.
+
+
+## Step 3.4 — Public USER registration workflow
+
+**What we implemented**
+- Added a public `POST /api/v1/auth/register` endpoint with Bean Validation for full name, email, mobile number, and password.
+- Normalized email addresses before identity creation and profile persistence; checked for existing profiles and retained the database's unique email constraint as the concurrency backstop.
+- Created Keycloak identities using the confidential Admin API client and assigned only the fixed `platform-api/USER` client role. The request cannot select a role.
+- Persisted the Keycloak subject ID, full name, normalized email, and mobile number in the application PostgreSQL database.
+- Added a compensating Keycloak delete when role assignment or profile persistence fails after identity creation.
+- Added safe HTTP error responses, registration controller tests, service workflow tests, and Keycloak deletion tests.
+- Kept passwords out of the application database and registration response.
+
+**Why**
+Keycloak owns authentication credentials, while the application database owns the user profile. Creating an identity and saving a profile spans two independent systems and cannot be covered by one ACID transaction. The workflow therefore uses a compensating action to remove a newly created Keycloak user if a later step fails.
+
+**Important concepts**
+- **Public registration:** an unauthenticated endpoint that can create only a standard USER account; it cannot grant ADMIN or STAFF.
+- **Email normalization:** trims and lowercases email before checking and creating the account.
+- **Unique constraint:** the existing case-insensitive unique email index handles concurrent duplicate registration attempts even when both requests pass the pre-check.
+- **Compensating action:** if role assignment or database persistence fails after Keycloak creation, the service attempts to delete that Keycloak user. This is not a distributed transaction; a failed compensation requires operational cleanup.
+- **Credential ownership:** the password is sent to Keycloak as a password credential and is never stored in the application profile table or included in the response.
+- **Email verification:** the imported local realm currently has email verification disabled; production deployment must configure SMTP and enable verification.
+
+**Files changed**
+- `src/main/java/io/github/abhi07799/platform/security/config/SecurityConfig.java`
+- `src/main/java/io/github/abhi07799/platform/user/infrastructure/persistence/UserProfileRepository.java`
+- `src/main/java/io/github/abhi07799/platform/identity/api/RegistrationRequest.java`
+- `src/main/java/io/github/abhi07799/platform/identity/api/RegistrationResponse.java`
+- `src/main/java/io/github/abhi07799/platform/identity/api/RegistrationController.java`
+- `src/main/java/io/github/abhi07799/platform/identity/api/RegistrationExceptionHandler.java`
+- `src/main/java/io/github/abhi07799/platform/identity/application/RegistrationService.java`
+- `src/main/java/io/github/abhi07799/platform/identity/application/EmailAlreadyRegisteredException.java`
+- `src/main/java/io/github/abhi07799/platform/identity/application/RegistrationFailedException.java`
+- `src/main/java/io/github/abhi07799/platform/identity/application/RegistrationCompensationException.java`
+- `src/main/java/io/github/abhi07799/platform/identity/infrastructure/keycloak/KeycloakAdminClient.java`
+- `src/test/java/io/github/abhi07799/platform/identity/api/RegistrationControllerTest.java`
+- `src/test/java/io/github/abhi07799/platform/identity/application/RegistrationServiceTest.java`
+- `src/test/java/io/github/abhi07799/platform/identity/infrastructure/keycloak/KeycloakAdminClientTest.java`
+- `README.md`
+- `docs/keycloak/README.md`
+- `docs/security/README.md`
+- `LEARNING.md`
+
+**Verification**
+The public registration route is explicitly permitted by the stateless security filter chain; all other non-public API paths still require a valid bearer token. Tests cover public endpoint access, validation, password omission from the response, default-role assignment, duplicate handling, and compensating deletion. Maven and a running Keycloak/PostgreSQL environment are not available here, so compilation, automated test execution, SMTP/email verification, and end-to-end registration remain to be run locally.
