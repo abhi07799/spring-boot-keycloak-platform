@@ -40,15 +40,13 @@ public class AdminAuditPersistenceService {
         }
         profile.updateEnabled(newEnabled);
         UserProfile saved = userProfileRepository.saveAndFlush(profile);
-        {
-            auditEventRepository.saveAndFlush(new AdminAuditEvent(
+        auditEventRepository.saveAndFlush(new AdminAuditEvent(
                     actorSubjectId,
                     newEnabled ? "USER_ENABLED" : "USER_DISABLED",
                     saved.getId(),
                     null,
                     previousEnabled,
                     newEnabled));
-        }
         return saved;
     }
 }
