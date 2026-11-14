@@ -150,7 +150,8 @@ public class KeycloakAdminClient {
             return previousRole.name();
         }
 
-        if (protectLastAdmin && "ADMIN".equals(previousRole.name()) && !"ADMIN".equals(targetRole)) {
+        if (protectLastAdmin && "ADMIN".equals(previousRole.name()) && !"ADMIN".equals(targetRole)
+                && isUserEnabled(userId)) {
             if (!hasAtLeastTwoEnabledAdministrators(clientUuid)) {
                 throw new KeycloakLastAdminException();
             }
@@ -211,6 +212,19 @@ public class KeycloakAdminClient {
                 .retrieve()
                 .body(new ParameterizedTypeReference<>() { });
         return roles == null ? List.of() : roles;
+    }
+
+
+    private boolean isUserEnabled(String userId) {
+        Map<String, Object> user = restClient.get()
+                .uri("/admin/realms/{realm}/users/{userId}", realm, userId)
+                .header(HttpHeaders.AUTHORIZATION, bearerToken())
+                .retrieve()
+                .body(new ParameterizedTypeReference<>() { });
+        if (user == null || !(user.get("enabled") instanceof Boolean enabled)) {
+            throw new IllegalStateException("Keycloak user representation did not include an enabled flag: " + userId);
+        }
+        return enabled;
     }
 
     private boolean hasAtLeastTwoEnabledAdministrators(String clientUuid) {
