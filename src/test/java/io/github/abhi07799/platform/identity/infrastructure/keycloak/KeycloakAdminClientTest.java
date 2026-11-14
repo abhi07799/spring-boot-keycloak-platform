@@ -99,6 +99,16 @@ class KeycloakAdminClientTest {
                         """,
                         MediaType.APPLICATION_JSON));
 
+        server.expect(requestTo("http://localhost:8081/admin/realms/platform/clients?clientId=platform-api"))
+                .andExpect(method(HttpMethod.GET))
+                .andRespond(withSuccess("[{\"id\":\"client-uuid\"}]", MediaType.APPLICATION_JSON));
+
+        server.expect(requestTo("http://localhost:8081/admin/realms/platform/users/user-123/role-mappings/clients/client-uuid"))
+                .andExpect(method(HttpMethod.GET))
+                .andRespond(withSuccess("""
+                        [{"id":"user-role","name":"USER","composite":false,"clientRole":true,"containerId":"client-uuid"}]
+                        """, MediaType.APPLICATION_JSON));
+
         server.expect(requestTo("http://localhost:8081/admin/realms/platform/users/user-123"))
                 .andExpect(method(HttpMethod.PUT))
                 .andExpect(header("Authorization", "Bearer service-token"))
@@ -192,6 +202,33 @@ class KeycloakAdminClientTest {
                 .andRespond(withStatus(HttpStatus.NO_CONTENT));
 
         assertThat(client.restoreClientRole("user-123", "platform-api", "STAFF")).isEqualTo("ADMIN");
+        server.verify();
+    }
+
+    @Test
+    void preventsDisablingTheLastEnabledAdministrator() {
+        server.expect(requestTo("http://localhost:8081/admin/realms/platform/users/user-123"))
+                .andExpect(method(HttpMethod.GET))
+                .andRespond(withSuccess("""
+                        {"id":"user-123","username":"admin@example.com","enabled":true}
+                        """, MediaType.APPLICATION_JSON));
+
+        server.expect(requestTo("http://localhost:8081/admin/realms/platform/clients?clientId=platform-api"))
+                .andExpect(method(HttpMethod.GET))
+                .andRespond(withSuccess("[{\"id\":\"client-uuid\"}]", MediaType.APPLICATION_JSON));
+
+        server.expect(requestTo("http://localhost:8081/admin/realms/platform/users/user-123/role-mappings/clients/client-uuid"))
+                .andExpect(method(HttpMethod.GET))
+                .andRespond(withSuccess("""
+                        [{"id":"admin-role","name":"ADMIN","composite":false,"clientRole":true,"containerId":"client-uuid"}]
+                        """, MediaType.APPLICATION_JSON));
+
+        server.expect(requestTo("http://localhost:8081/admin/realms/platform/clients/client-uuid/roles/ADMIN/users?first=0&max=100"))
+                .andExpect(method(HttpMethod.GET))
+                .andRespond(withSuccess("[{\"id\":\"user-123\",\"enabled\":true}]", MediaType.APPLICATION_JSON));
+
+        assertThatThrownBy(() -> client.updateUserEnabled("user-123", false))
+                .isInstanceOf(KeycloakLastAdminException.class);
         server.verify();
     }
 
