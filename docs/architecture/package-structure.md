@@ -18,8 +18,8 @@ io.github.abhi07799.platform
 │   └── infrastructure/
 │       └── persistence/    # Application profile entity and repository
 └── administration/
-    ├── api/                # ADMIN-only privileged user provisioning endpoint
-    └── application/        # STAFF/ADMIN account provisioning workflow
+    ├── api/                # ADMIN-only user directory and privileged provisioning endpoints
+    └── application/        # User listing and STAFF/ADMIN account provisioning workflows
 ```
 
 ## Rules
