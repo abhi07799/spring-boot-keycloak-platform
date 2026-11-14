@@ -65,7 +65,7 @@ For the current backend operations, grant the service account only the realm-man
 
 Keycloak's authorization model can vary with fine-grained admin permissions and realm configuration. Verify each operation in the local Keycloak 26.8.2 instance; do not grant realm-admin as a shortcut. Role-mapping operations may require an additional narrowly scoped permission depending on the Keycloak admin-permission configuration.
 
-The public backend registration endpoint is `POST /api/v1/auth/register`. It accepts full name, email, mobile number, and password; creates the identity through the Admin REST API with `emailVerified=false`; assigns only the `USER` client role under `platform-api`; and persists the profile in the application database. After persistence, it asks Keycloak to send its built-in verification action email. Email delivery failure does not roll back the account; the user can request another verification message. Passwords are sent directly to Keycloak and are never stored in the application database or returned by the API.
+Both public registration and ADMIN provisioning ask Keycloak to send an email-verification action after the application profile has been persisted. Delivery failure does not undo account creation; the user can call the public resend-verification endpoint once SMTP is available.\n\nThe public backend registration endpoint is `POST /api/v1/auth/register`. It accepts full name, email, mobile number, and password; creates the identity through the Admin REST API with `emailVerified=false`; assigns only the `USER` client role under `platform-api`; and persists the profile in the application database. After persistence, it asks Keycloak to send its built-in verification action email. Email delivery failure does not roll back the account; the user can request another verification message. Passwords are sent directly to Keycloak and are never stored in the application database or returned by the API.
 
 The privileged endpoint `POST /api/v1/admin/users` requires an access token containing `ROLE_ADMIN`. It accepts the same profile and password fields plus a `role` value restricted to `STAFF` or `ADMIN`. The backend creates the Keycloak identity, assigns exactly the requested `platform-api` client role, and persists the application profile. A caller cannot request `USER` through this administrative endpoint; standard accounts use public registration. Role authorization is enforced by Spring Security before the controller is invoked.
 
@@ -74,17 +74,18 @@ The privileged endpoint `POST /api/v1/admin/users` requires an access token cont
 The admin provisioning API cannot create the first application administrator because no application principal has `ROLE_ADMIN` yet. Bootstrap that first administrator out of band, before exposing the admin endpoint:
 
 1. In the Keycloak Admin Console, create a user in the `platform` realm, set the required profile fields, and configure a password using the console.
-2. From that user's details, copy the Keycloak user ID (the subject identifier).
-3. Assign the `ADMIN` client role from the `platform-api` client to that Keycloak user. Do not assign a realm role.
-4. Insert the matching profile row into the application database using the same Keycloak user ID. Example (replace every placeholder with the actual user data; execute only once against the application database):
+2. Send the built-in verification email from the user's **Actions** menu and have the administrator complete the link before attempting login. Do not manually mark an unverified address as verified.
+3. From that user's details, copy the Keycloak user ID (the subject identifier).
+4. Assign the `ADMIN` client role from the `platform-api` client to that Keycloak user. Do not assign a realm role.
+5. Insert the matching profile row into the application database using the same Keycloak user ID. Example (replace every placeholder with the actual user data; execute only once against the application database):
 
 ```sql
 INSERT INTO user_profiles (id, keycloak_subject_id, full_name, email, mobile_number)
 VALUES (gen_random_uuid(), '<KEYCLOAK_USER_ID>', '<FULL_NAME>', '<EMAIL>', '<MOBILE_NUMBER>');
 ```
 
-5. Sign in through the `platform-swagger` client and confirm the access token contains `resource_access.platform-api.roles` with `ADMIN` and the `platform-api` audience.
-6. Call `GET /api/v1/users/me` to confirm the profile is linked, then use the admin provisioning endpoint.
+6. Sign in through the `platform-swagger` client and confirm the access token contains `resource_access.platform-api.roles` with `ADMIN` and the `platform-api` audience.
+7. Call `GET /api/v1/users/me` to confirm the profile is linked, then use the admin provisioning endpoint.
 
 Keep this as a controlled, audited bootstrap operation. Do not add a public bootstrap HTTP endpoint, commit bootstrap credentials, or grant `realm-admin` to the backend service account.
 
