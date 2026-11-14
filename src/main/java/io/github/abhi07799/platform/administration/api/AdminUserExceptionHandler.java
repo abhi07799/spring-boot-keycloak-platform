@@ -11,6 +11,7 @@ import io.github.abhi07799.platform.administration.application.AdminUserRoleUpda
 import io.github.abhi07799.platform.administration.application.AdminUserRoleCompensationException;
 import io.github.abhi07799.platform.administration.application.KeycloakSessionRevocationException;
 import io.github.abhi07799.platform.administration.application.SessionRevocationPersistenceException;
+import io.github.abhi07799.platform.administration.application.SessionRevocationUnavailableException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
@@ -76,6 +77,12 @@ public class AdminUserExceptionHandler {
     ResponseEntity<ProblemDetail> handleSessionRevocationPersistenceFailure(SessionRevocationPersistenceException exception) {
         return problem(HttpStatus.INTERNAL_SERVER_ERROR,
                 "Keycloak sessions were terminated, but local token revocation could not be persisted. Retry the logout request.");
+    }
+
+    @ExceptionHandler(SessionRevocationUnavailableException.class)
+    ResponseEntity<ProblemDetail> handleSessionRevocationUnavailable(SessionRevocationUnavailableException exception) {
+        return problem(HttpStatus.SERVICE_UNAVAILABLE,
+                "Session revocation is temporarily unavailable. Please retry the logout request.");
     }
 
     private ResponseEntity<ProblemDetail> problem(HttpStatus status, String detail) {
