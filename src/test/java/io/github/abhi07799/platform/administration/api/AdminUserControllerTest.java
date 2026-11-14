@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -112,7 +113,7 @@ class AdminUserControllerTest {
     @Test
     void allowsAdminToDisableAnAccount() throws Exception {
         UUID userId = UUID.fromString("f7f5d5b5-1f75-4a39-9c51-9a5d7b3d5f11");
-        when(statusService.updateEnabledStatus(userId, false)).thenReturn(
+        when(statusService.updateEnabledStatus(userId, false, anyString())).thenReturn(
                 new UserProfileResponse(userId, "Test Person", "person@example.com",
                         "+919876543210", false, null, null));
 
@@ -125,7 +126,7 @@ class AdminUserControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.enabled").value(false));
 
-        verify(statusService).updateEnabledStatus(userId, false);
+        verify(statusService).updateEnabledStatus(userId, false, anyString());
     }
 
     @Test
@@ -144,7 +145,7 @@ class AdminUserControllerTest {
     @Test
     void returnsNotFoundWhenAdminTargetsAnUnknownUser() throws Exception {
         UUID userId = UUID.fromString("f7f5d5b5-1f75-4a39-9c51-9a5d7b3d5f11");
-        when(statusService.updateEnabledStatus(userId, false))
+        when(statusService.updateEnabledStatus(userId, false, anyString()))
                 .thenThrow(new io.github.abhi07799.platform.administration.application.AdminUserNotFoundException());
 
         mockMvc.perform(patch("/api/v1/admin/users/{userId}/status", userId)
@@ -168,7 +169,7 @@ class AdminUserControllerTest {
 
     @Test
     void allowsAdminToProvisionUserAndReturnsCreated() throws Exception {
-        when(provisioningService.provision(any())).thenReturn(null);
+        when(provisioningService.provision(any(), anyString())).thenReturn(null);
 
         mockMvc.perform(post("/api/v1/admin/users")
                         .with(jwt().authorities(new SimpleGrantedAuthority("ROLE_ADMIN")))
@@ -184,7 +185,7 @@ class AdminUserControllerTest {
                                 """))
                 .andExpect(status().isCreated());
 
-        verify(provisioningService).provision(any());
+        verify(provisioningService).provision(any(), anyString());
     }
 
     @Test
