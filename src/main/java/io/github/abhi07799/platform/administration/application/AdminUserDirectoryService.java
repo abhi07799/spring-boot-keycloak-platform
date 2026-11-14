@@ -19,7 +19,8 @@ public class AdminUserDirectoryService {
     }
 
     public Page<UserProfile> listUsers(int page, int size) {
-        return userProfileRepository.findAll(PageRequest.of(
-                page, size, Sort.by(Sort.Direction.DESC, "createdAt").and(Sort.by(Sort.Direction.DESC, "id"))));
+        Sort sort = Sort.by(Sort.Direction.DESC, "createdAt")
+                .and(Sort.by(Sort.Direction.DESC, "id"));
+        return userProfileRepository.findAll(PageRequest.of(page, size, sort));
     }
 }
