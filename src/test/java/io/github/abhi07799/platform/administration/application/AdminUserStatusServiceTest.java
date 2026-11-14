@@ -50,7 +50,7 @@ class AdminUserStatusServiceTest {
         UserProfile profile = new UserProfile(
                 KEYCLOAK_SUBJECT, "Test Person", "person@example.com", "+919876543210");
         when(userProfileRepository.findById(USER_ID)).thenReturn(Optional.of(profile));
-        when(auditPersistenceService.persistStatusChange(USER_ID, "admin-subject", true, false)).thenReturn(profile);
+        when(auditPersistenceService.persistStatusChange(USER_ID, "admin-subject", true, false)).thenAnswer(invocation -> { profile.updateEnabled(false); return profile; });
         when(keycloakAdminClient.updateUserEnabled(KEYCLOAK_SUBJECT, false)).thenReturn(true);
 
         UserProfileResponse response = service.updateEnabledStatus(USER_ID, false, "admin-subject");
@@ -68,7 +68,7 @@ class AdminUserStatusServiceTest {
                 KEYCLOAK_SUBJECT, "Test Person", "person@example.com", "+919876543210");
         profile.updateEnabled(false);
         when(userProfileRepository.findById(USER_ID)).thenReturn(Optional.of(profile));
-        when(auditPersistenceService.persistStatusChange(USER_ID, "admin-subject", false, true)).thenReturn(profile);
+        when(auditPersistenceService.persistStatusChange(USER_ID, "admin-subject", false, true)).thenAnswer(invocation -> { profile.updateEnabled(true); return profile; });
         when(keycloakAdminClient.updateUserEnabled(KEYCLOAK_SUBJECT, true)).thenReturn(false);
 
         UserProfileResponse response = service.updateEnabledStatus(USER_ID, true, "admin-subject");
@@ -94,7 +94,7 @@ class AdminUserStatusServiceTest {
         doThrow(new IllegalStateException("Keycloak unavailable"))
                 .when(keycloakAdminClient).updateUserEnabled(KEYCLOAK_SUBJECT, false);
 
-        assertThatThrownBy(() -> service.updateEnabledStatus(USER_ID, false))
+        assertThatThrownBy(() -> service.updateEnabledStatus(USER_ID, false, "admin-subject"))
                 .isInstanceOf(KeycloakAccountStatusUpdateException.class);
         assertThat(profile.isEnabled()).isTrue();
         verify(auditPersistenceService, never()).persistStatusChange(USER_ID, "admin-subject", true, false);
