@@ -391,3 +391,38 @@ Public registration must never grant privileged access. The administrative provi
 
 **Verification**
 Tests cover the intended authorization boundary, supported roles, duplicate handling, and compensation. Maven is not installed in this execution environment, so compilation and automated test execution remain pending local verification with JDK 21 and Maven. A live Keycloak/PostgreSQL test is also required to verify the actual service-account permissions for role mapping and user deletion.
+
+
+## Step 3.7 — Authenticated current-user profile update
+
+**What we implemented**
+- Added `PUT /api/v1/users/me`, requiring a valid bearer access token like the existing GET endpoint.
+- The API derives the profile identity only from the JWT `sub` claim; no user ID can be supplied by the caller.
+- Added a request contract that validates a nonblank full name (maximum 150 characters) and a mobile number with 10–15 digits and an optional leading `+`.
+- Updated only `fullName` and `mobileNumber`; email, Keycloak subject, and credentials are not writable through this endpoint.
+- Trimmed the submitted editable values and used a write transaction so JPA dirty checking persists the managed profile. The entity `@PreUpdate` callback maintains `updatedAt`.
+- Added controller and service tests for authentication, validation, subject-based lookup, update behavior, unchanged email, and missing-profile handling.
+
+**Why**
+A user may edit their application profile but must not be able to change the identity link or privileged attributes. The authenticated token determines the target profile, while Keycloak remains the owner of identity credentials and email identity.
+
+**Important concepts**
+- **Principal-derived resource access:** the target profile is always resolved from the validated token subject.
+- **Allowlisted writable fields:** the request DTO exposes only fields the user is permitted to modify.
+- **JPA dirty checking:** the managed entity is updated inside a transaction; the persistence context flushes the change without accepting a detached entity from the API.
+- **Entity lifecycle callback:** `@PreUpdate` refreshes the `updated_at` timestamp when Hibernate writes an entity update.
+
+**Files changed**
+- `src/main/java/io/github/abhi07799/platform/user/api/UpdateUserProfileRequest.java`
+- `src/main/java/io/github/abhi07799/platform/user/api/UserProfileController.java`
+- `src/main/java/io/github/abhi07799/platform/user/application/UserProfileService.java`
+- `src/main/java/io/github/abhi07799/platform/user/infrastructure/persistence/UserProfile.java`
+- `src/test/java/io/github/abhi07799/platform/user/api/UserProfileControllerTest.java`
+- `src/test/java/io/github/abhi07799/platform/user/application/UserProfileServiceTest.java`
+- `README.md`
+- `docs/security/README.md`
+- `docs/architecture/package-structure.md`
+- `LEARNING.md`
+
+**Verification**
+Tests were added for the update workflow and authorization boundary. Maven is not installed in this execution environment, so compilation and automated test execution remain pending local verification with JDK 21 and Maven. A live Keycloak/PostgreSQL check is also pending.

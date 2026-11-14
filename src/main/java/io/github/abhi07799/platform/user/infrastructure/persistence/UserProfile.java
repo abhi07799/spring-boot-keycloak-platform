@@ -48,6 +48,11 @@ public class UserProfile {
         this.mobileNumber = mobileNumber;
     }
 
+    public void updateProfileDetails(String fullName, String mobileNumber) {
+        this.fullName = fullName;
+        this.mobileNumber = mobileNumber;
+    }
+
     @PrePersist
     void onCreate() {
         Instant now = Instant.now();
