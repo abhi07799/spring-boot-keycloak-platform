@@ -31,6 +31,7 @@ A learning-oriented backend platform built with Java 21, Spring Boot 4.1.2, Keyc
 - `platform-api`: bearer-only API audience and role owner.
 - `platform-swagger`: public Swagger UI client using Authorization Code + PKCE S256.
 - `platform-admin-service`: confidential service-account client for backend Admin REST API calls.
+- Full Scope Allowed is disabled; Swagger receives only explicitly mapped API client roles.
 
 See [Keycloak configuration](docs/keycloak/README.md) and [local infrastructure](docs/docker/README.md).
 
