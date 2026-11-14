@@ -39,6 +39,7 @@ The backend uses KEYCLOAK_ADMIN_BASE_URL=http://localhost:8081 and realm platfor
 
 - Registration endpoint: `POST http://localhost:8080/api/v1/auth/register` (public; assigns only `USER`).
 - Current user profile: `GET http://localhost:8080/api/v1/users/me` (authenticated; resolves the profile from the JWT subject).
+- Admin provisioning: `POST http://localhost:8080/api/v1/admin/users` (ADMIN only; creates `STAFF` or `ADMIN`).
 - Ping endpoint: http://localhost:8080/api/v1/ping (public)
 - Swagger UI: http://localhost:8080/swagger-ui.html (Keycloak OAuth2 + PKCE)
 - OpenAPI JSON: http://localhost:8080/v3/api-docs
@@ -70,7 +71,7 @@ See [Keycloak configuration](docs/keycloak/README.md), [security setup](docs/sec
 - `main`: stable baseline.
 - `develop`: integration branch.
 - `step1/initial-project-setup`: initial repository baseline.
-- Later milestones use numbered prefixes such as `step2.1/`, `step2.2/`, `step2.3/`, `step2.4/`, `step3.1/`, `step3.2/`, `step3.3/`, `step3.4/`, and `step3.5/`.
+- Later milestones use numbered prefixes such as `step2.1/`, `step2.2/`, `step2.3/`, `step2.4/`, `step3.1/`, `step3.2/`, `step3.3/`, `step3.4/`, `step3.5/`, and `step3.6/`.
 
 ## Learning journal
 See [LEARNING.md](LEARNING.md).
