@@ -9,8 +9,8 @@ io.github.abhi07799.platform
 ├── system/
 │   └── api/                # Operational endpoints (for example, ping)
 ├── identity/
-│   ├── api/                # Registration, authenticated logout, and request/response contracts
-│   ├── application/        # Registration use case and orchestration
+│   ├── api/                # Registration, account recovery, authenticated logout, and request/response contracts
+│   ├── application/        # Registration, password-reset, and email-verification use cases
 │   └── infrastructure/     # Keycloak Admin REST API integration
 ├── user/
 │   ├── api/                # Authenticated profile endpoint and response contract
