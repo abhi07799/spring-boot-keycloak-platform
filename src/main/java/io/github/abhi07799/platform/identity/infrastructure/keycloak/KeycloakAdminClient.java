@@ -2,6 +2,7 @@ package io.github.abhi07799.platform.identity.infrastructure.keycloak;
 
 import java.net.URI;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
@@ -48,6 +49,16 @@ public class KeycloakAdminClient {
             throw new IllegalStateException("Keycloak returned an invalid user Location header");
         }
         return userId;
+    }
+
+    public void updateUserEnabled(String userId, boolean enabled) {
+        restClient.put()
+                .uri("/admin/realms/{realm}/users/{userId}", realm, userId)
+                .header(HttpHeaders.AUTHORIZATION, bearerToken())
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(Map.of("enabled", enabled))
+                .retrieve()
+                .toBodilessEntity();
     }
 
     public void deleteUser(String userId) {
