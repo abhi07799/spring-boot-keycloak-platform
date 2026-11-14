@@ -76,6 +76,13 @@ public class RegistrationService {
             UserProfile profile = userProfileRepository.saveAndFlush(
                     new UserProfile(keycloakUserId, fullName, normalizedEmail, mobileNumber));
 
+            try {
+                keycloakAdminClient.sendVerifyEmail(keycloakUserId);
+            } catch (RuntimeException emailFailure) {
+                log.warn("Could not send initial email verification for Keycloak user id {}",
+                        keycloakUserId, emailFailure);
+            }
+
             return new RegistrationResponse(
                     profile.getId(),
                     profile.getFullName(),
