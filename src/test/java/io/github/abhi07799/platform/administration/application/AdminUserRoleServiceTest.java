@@ -46,8 +46,14 @@ class AdminUserRoleServiceTest {
     void setUp() {
         service = new AdminUserRoleService(
                 userProfileRepository, keycloakAdminClient, auditPersistenceService, roleChangeLockService);
-        doAnswer(invocation -> ((Supplier<?>) invocation.getArgument(0)).get())
-                .when(roleChangeLockService).withRoleChangeLock(any());
+        doAnswer(invocation -> {
+                    try {
+                        return ((Supplier<?>) invocation.getArgument(0)).get();
+                    } catch (RuntimeException failure) {
+                        ((java.util.function.Consumer<RuntimeException>) invocation.getArgument(1)).accept(failure);
+                        throw failure;
+                    }
+                }).when(roleChangeLockService).withRoleChangeLock(any(), any());
     }
 
     @Test
