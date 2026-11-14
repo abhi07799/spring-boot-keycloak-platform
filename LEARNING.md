@@ -433,7 +433,7 @@ Tests were added for the update workflow and authorization boundary. Maven is no
 **What we implemented**
 - Added `GET /api/v1/admin/users`, protected by the existing `ROLE_ADMIN` access rule for `/api/v1/admin/**`.
 - Added a directory application service that reads application profiles using Spring Data JPA pagination.
-- Added a stable newest-first ordering by `createdAt` so page results have deterministic ordering for records with distinct creation timestamps.
+- Added a deterministic newest-first ordering by `createdAt` with descending profile `id` as a tie-breaker.
 - Added query parameters `page` (zero-based, default `0`) and `size` (default `20`, maximum `100`).
 - Added an explicit response contract containing the user profile list and pagination metadata: page, size, total elements, total pages, first, and last.
 - Reused the safe `UserProfileResponse`; the directory does not expose Keycloak subject IDs or credentials.
