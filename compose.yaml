@@ -47,7 +47,7 @@ services:
     image: quay.io/keycloak/keycloak:26.8.2
     container_name: platform-keycloak
     restart: unless-stopped
-    command: ["start-dev", "--health-enabled=true", "--http-management-health-enabled=true", "--http-enabled=true", "--http-port=8080"]
+    command: ["start-dev", "--import-realm", "--health-enabled=true", "--http-management-health-enabled=true", "--http-enabled=true", "--http-port=8080"]
     environment:
       KC_DB: postgres
       KC_DB_URL: jdbc:postgresql://keycloak-db:5432/${KEYCLOAK_DB_NAME:-keycloak}
@@ -57,6 +57,8 @@ services:
       KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:?Set KEYCLOAK_ADMIN_PASSWORD in .env}
     ports:
       - "127.0.0.1:${KEYCLOAK_HTTP_PORT:-8081}:8080"
+    volumes:
+      - ./infra/keycloak/realm:/opt/keycloak/data/import:ro
     depends_on:
       keycloak-db:
         condition: service_healthy
