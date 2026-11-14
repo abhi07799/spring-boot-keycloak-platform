@@ -32,7 +32,10 @@ The backend is a Maven-based Spring MVC application secured as a stateless OAuth
 2. Start infrastructure: `docker compose up -d app-db keycloak`.
 3. Export `SPRING_DATASOURCE_URL`, `SPRING_DATASOURCE_USERNAME`, and `SPRING_DATASOURCE_PASSWORD` in your shell (see [database setup](docs/database/README.md)).
 4. Set `KEYCLOAK_ISSUER_URI=http://localhost:8081/realms/platform` (see [security setup](docs/security/README.md)).
-5. Run `mvn spring-boot:run`.
+5. After the first realm import, copy the generated platform-admin-service client secret into your ignored .env file and export KEYCLOAK_ADMIN_SERVICE_CLIENT_SECRET in the shell that starts Spring Boot (see [Keycloak setup](docs/keycloak/README.md)).
+6. Run `mvn spring-boot:run`.
+
+The backend uses KEYCLOAK_ADMIN_BASE_URL=http://localhost:8081 and realm platform by default. If running the backend inside Compose, use http://keycloak:8080 for the admin base URL and ensure the configured issuer/token endpoint is reachable from that container.
 
 - Ping endpoint: http://localhost:8080/api/v1/ping (public)
 - Swagger UI: http://localhost:8080/swagger-ui.html (Keycloak OAuth2 + PKCE)
