@@ -27,17 +27,50 @@ public class AdminUserProvisioningService {
     private final KeycloakAdminClient keycloakAdminClient;
     private final UserProfileRepository userProfileRepository;
     private final AdminAuditPersistenceService auditPersistenceService;
+    private final AdminRoleChangeLockService roleChangeLockService;
 
     public AdminUserProvisioningService(
             KeycloakAdminClient keycloakAdminClient,
             UserProfileRepository userProfileRepository,
-            AdminAuditPersistenceService auditPersistenceService) {
+            AdminAuditPersistenceService auditPersistenceService,
+            AdminRoleChangeLockService roleChangeLockService) {
         this.keycloakAdminClient = keycloakAdminClient;
         this.userProfileRepository = userProfileRepository;
         this.auditPersistenceService = auditPersistenceService;
+        this.roleChangeLockService = roleChangeLockService;
     }
 
     public RegistrationResponse provision(AdminUserProvisioningRequest request, String actorSubjectId) {
+        if (request.role() == AdminUserProvisioningRequest.ProvisionedRole.ADMIN) {
+            return provisionAdminWhileLocked(request, actorSubjectId);
+        }
+        return provisionUser(request, actorSubjectId, new ProvisioningContext());
+    }
+
+    private RegistrationResponse provisionAdminWhileLocked(
+            AdminUserProvisioningRequest request, String actorSubjectId) {
+        ProvisioningContext context = new ProvisioningContext();
+        try {
+            return roleChangeLockService.withRoleChangeLock(
+                    () -> provisionUser(request, actorSubjectId, context));
+        } catch (DataIntegrityViolationException exception) {
+            if (context.keycloakUserId == null) {
+                throw exception;
+            }
+            compensateKeycloakUser(context.keycloakUserId, exception);
+            throw new EmailAlreadyRegisteredException();
+        } catch (RuntimeException exception) {
+            if (context.keycloakUserId == null) {
+                throw exception;
+            }
+            compensateKeycloakUser(context.keycloakUserId, exception);
+            throw new RegistrationFailedException(
+                    "User provisioning could not be completed. Please try again later.", exception);
+        }
+    }
+
+    private RegistrationResponse provisionUser(
+            AdminUserProvisioningRequest request, String actorSubjectId, ProvisioningContext context) {
         String normalizedEmail = request.email().trim().toLowerCase(Locale.ROOT);
         String fullName = request.fullName().trim();
         String mobileNumber = request.mobileNumber().trim();
@@ -52,9 +85,8 @@ public class AdminUserProvisioningService {
                 List.of(new KeycloakUserRepresentation.CredentialRepresentation(
                         "password", request.password(), false)));
 
-        String keycloakUserId;
         try {
-            keycloakUserId = keycloakAdminClient.createUser(keycloakUser);
+            context.keycloakUserId = keycloakAdminClient.createUser(keycloakUser);
         } catch (RestClientResponseException exception) {
             if (exception.getStatusCode().value() == 409) {
                 throw new EmailAlreadyRegisteredException();
@@ -66,30 +98,51 @@ public class AdminUserProvisioningService {
                     "The identity provider could not create the account. Please try again later.", exception);
         }
 
-        try {
-            keycloakAdminClient.assignClientRole(keycloakUserId, API_CLIENT_ID, role);
-            UserProfile profile = auditPersistenceService.persistProvisionedUser(
-                    new UserProfile(keycloakUserId, fullName, normalizedEmail, mobileNumber),
-                    actorSubjectId, role);
-            return new RegistrationResponse(
-                    profile.getId(), profile.getFullName(), profile.getEmail(), profile.getCreatedAt());
-        } catch (DataIntegrityViolationException exception) {
-            compensateKeycloakUser(keycloakUserId, exception);
-            throw new EmailAlreadyRegisteredException();
-        } catch (RuntimeException exception) {
-            compensateKeycloakUser(keycloakUserId, exception);
-            throw new RegistrationFailedException(
-                    "User provisioning could not be completed. Please try again later.", exception);
+        if (request.role() != AdminUserProvisioningRequest.ProvisionedRole.ADMIN) {
+            try {
+                return assignRoleAndPersist(context.keycloakUserId, fullName, normalizedEmail,
+                        mobileNumber, role, actorSubjectId);
+            } catch (DataIntegrityViolationException exception) {
+                compensateKeycloakUser(context.keycloakUserId, exception);
+                throw new EmailAlreadyRegisteredException();
+            } catch (RuntimeException exception) {
+                compensateKeycloakUser(context.keycloakUserId, exception);
+                throw new RegistrationFailedException(
+                        "User provisioning could not be completed. Please try again later.", exception);
+            }
         }
+
+        return assignRoleAndPersist(context.keycloakUserId, fullName, normalizedEmail,
+                mobileNumber, role, actorSubjectId);
+    }
+
+    private RegistrationResponse assignRoleAndPersist(
+            String keycloakUserId,
+            String fullName,
+            String normalizedEmail,
+            String mobileNumber,
+            String role,
+            String actorSubjectId) {
+        keycloakAdminClient.assignClientRole(keycloakUserId, API_CLIENT_ID, role);
+        UserProfile profile = auditPersistenceService.persistProvisionedUser(
+                new UserProfile(keycloakUserId, fullName, normalizedEmail, mobileNumber),
+                actorSubjectId, role);
+        return new RegistrationResponse(
+                profile.getId(), profile.getFullName(), profile.getEmail(), profile.getCreatedAt());
     }
 
     private void compensateKeycloakUser(String keycloakUserId, RuntimeException provisioningFailure) {
         try {
             keycloakAdminClient.deleteUser(keycloakUserId);
         } catch (RuntimeException compensationFailure) {
+            provisioningFailure.addSuppressed(compensationFailure);
             log.error("Admin provisioning compensation failed for Keycloak user id {}",
-                    keycloakUserId, compensationFailure);
+                    keycloakUserId, provisioningFailure);
             throw new RegistrationCompensationException(provisioningFailure, compensationFailure);
         }
+    }
+
+    private static final class ProvisioningContext {
+        private String keycloakUserId;
     }
 }
