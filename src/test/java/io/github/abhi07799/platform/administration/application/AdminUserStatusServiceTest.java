@@ -127,7 +127,7 @@ class AdminUserStatusServiceTest {
         doThrow(new IllegalStateException("Keycloak unavailable"))
                 .when(keycloakAdminClient).updateUserEnabled(KEYCLOAK_SUBJECT, true);
 
-        assertThatThrownBy(() -> service.updateEnabledStatus(USER_ID, false))
+        assertThatThrownBy(() -> service.updateEnabledStatus(USER_ID, false, "admin-subject"))
                 .isInstanceOf(AdminUserStatusCompensationException.class);
     }
 }
