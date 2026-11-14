@@ -27,7 +27,7 @@ Public:
 - `/actuator/health` and its subpaths
 - Swagger UI and OpenAPI document endpoints
 
-All other requests require a valid bearer access token. The API is stateless; HTTP Basic, form login, and CSRF are disabled for this bearer-token-only API configuration. Role-specific endpoint authorization will be added alongside the corresponding business APIs.
+All other requests require a valid bearer access token. In particular, `GET /api/v1/users/me` is authenticated and resolves the application profile using the validated JWT `sub` claim; callers cannot provide another user's identifier. A subject without a corresponding application profile receives HTTP 404. The response excludes the Keycloak subject identifier and all credential data. The API is stateless; HTTP Basic, form login, and CSRF are disabled for this bearer-token-only API configuration. Role-specific endpoint authorization will be added alongside the corresponding business APIs.
 
 ## Swagger OAuth2 login
 
