@@ -18,8 +18,8 @@ io.github.abhi07799.platform
 │   └── infrastructure/
 │       └── persistence/    # Application profile entity and repository
 └── administration/
-    ├── api/                # ADMIN-only privileged user provisioning endpoint
-    └── application/        # STAFF/ADMIN account provisioning workflow
+    ├── api/                # ADMIN-only user directory and privileged provisioning endpoints
+    └── application/        # User listing and STAFF/ADMIN account provisioning workflows
 ```
 
 ## Rules
@@ -30,4 +30,4 @@ io.github.abhi07799.platform
 - Keycloak credentials remain in Keycloak. The `user` feature stores application profile data and the Keycloak subject identifier only.
 - The current-user read and update endpoints derive identity exclusively from the validated JWT subject; they do not accept a user ID from the request.
 - Self-service profile updates are limited to full name and mobile number. Email and credentials remain managed by Keycloak.
-- Administrative provisioning is protected by `ROLE_ADMIN`; its request role is an enum restricted to `STAFF` and `ADMIN`. Public registration remains hard-coded to `USER`.
+- Administrative user listing and provisioning are protected by `ROLE_ADMIN`. The directory is paginated with a bounded page size; provisioning accepts only `STAFF` and `ADMIN`. Public registration remains hard-coded to `USER`.

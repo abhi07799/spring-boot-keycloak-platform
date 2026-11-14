@@ -426,3 +426,38 @@ A user may edit their application profile but must not be able to change the ide
 
 **Verification**
 Tests were added for the update workflow and authorization boundary. Maven is not installed in this execution environment, so compilation and automated test execution remain pending local verification with JDK 21 and Maven. A live Keycloak/PostgreSQL check is also pending.
+
+
+## Step 3.8 — ADMIN-only paginated user directory
+
+**What we implemented**
+- Added `GET /api/v1/admin/users`, protected by the existing `ROLE_ADMIN` access rule for `/api/v1/admin/**`.
+- Added a directory application service that reads application profiles using Spring Data JPA pagination.
+- Added a deterministic newest-first ordering by `createdAt` with descending profile `id` as a tie-breaker.
+- Added query parameters `page` (zero-based, default `0`) and `size` (default `20`, maximum `100`).
+- Added an explicit response contract containing the user profile list and pagination metadata: page, size, total elements, total pages, first, and last.
+- Reused the safe `UserProfileResponse`; the directory does not expose Keycloak subject IDs or credentials.
+- Added controller tests for unauthenticated rejection, USER/STAFF forbidden access, ADMIN access, pagination metadata, and maximum page size; added a service test for pagination and sort order.
+
+**Why**
+Administrators need a bounded way to inspect application accounts after registration and provisioning. Pagination prevents an unbounded full-table response, while the existing ADMIN authorization boundary keeps profile data restricted to administrators.
+
+**Important concepts**
+- **Spring Data pagination:** `PageRequest` translates page and size into a database-level paginated query.
+- **Deterministic sorting:** the query sorts newest profiles first and uses the profile ID as a tie-breaker rather than relying on unspecified database row order.
+- **Bounded page size:** a maximum of 100 limits response size and database work per request.
+- **DTO projection at the API boundary:** the endpoint reuses the public-safe profile response instead of serializing persistence entities.
+
+**Files changed**
+- `src/main/java/io/github/abhi07799/platform/administration/api/AdminUserProvisioningController.java`
+- `src/main/java/io/github/abhi07799/platform/administration/api/AdminUserDirectoryResponse.java`
+- `src/main/java/io/github/abhi07799/platform/administration/application/AdminUserDirectoryService.java`
+- `src/test/java/io/github/abhi07799/platform/administration/api/AdminUserProvisioningControllerTest.java`
+- `src/test/java/io/github/abhi07799/platform/administration/application/AdminUserDirectoryServiceTest.java`
+- `README.md`
+- `docs/security/README.md`
+- `docs/architecture/package-structure.md`
+- `LEARNING.md`
+
+**Verification**
+Tests were added but not executed because Maven is not installed in this execution environment. Run `mvn test` with JDK 21 and Maven. A live PostgreSQL/Keycloak check is also pending.
