@@ -162,3 +162,39 @@ Flyway provides a versioned, reviewable source of truth for database schema chan
 
 **Verification**
 The migration SQL, YAML, and POM were structurally inspected. The migration has a unique Keycloak subject index and a case-insensitive unique email index. Docker and Maven runtime verification are not available in this execution environment, so Flyway execution, Hibernate schema validation, and the full test suite still need to be run locally against PostgreSQL.
+
+ 
+## Step 3.1 — Spring Security and Keycloak JWT resource server
+
+**What we implemented**
+- Added the Spring Boot 4.1.2 OAuth2 Resource Server starter and its test starter.
+- Configured stateless bearer-token security with public health, documentation, Swagger, and ping endpoints; all other requests require authentication.
+- Added JWT signature, issuer, timestamp, and `platform-api` audience validation using Keycloak's JWK endpoint.
+- Mapped only the `ADMIN`, `STAFF`, and `USER` roles from `resource_access.platform-api.roles` to Spring Security authorities.
+- Added MVC security tests and focused role-converter tests.
+- Documented local and container issuer configuration.
+
+**Why**
+A valid signature alone is not enough: an API should also reject tokens issued by an unexpected realm or intended for a different audience. Explicit role mapping prevents unrelated Keycloak roles from accidentally becoming application permissions.
+
+**Important concepts**
+- **Resource server:** an API that accepts and validates OAuth 2.0 access tokens.
+- **JWK set:** Keycloak's published public keys used to verify JWT signatures.
+- **Issuer (`iss`):** the identity provider that issued the token; it must match the configured realm issuer exactly.
+- **Audience (`aud`):** the intended recipient API; this backend requires `platform-api`.
+- **Granted authority:** Spring Security's internal permission name; Keycloak client roles become `ROLE_ADMIN`, `ROLE_STAFF`, and `ROLE_USER`.
+- **Stateless security:** the backend does not create an HTTP session to retain authentication state.
+
+**Files changed**
+- `pom.xml`
+- `src/main/resources/application.yaml`
+- `src/main/java/io/github/abhi07799/platform/security/config/SecurityConfig.java`
+- `src/main/java/io/github/abhi07799/platform/security/KeycloakRoleConverter.java`
+- `src/test/java/io/github/abhi07799/platform/system/api/SystemControllerTest.java`
+- `src/test/java/io/github/abhi07799/platform/security/KeycloakRoleConverterTest.java`
+- `docs/security/README.md`
+- `README.md`
+- `LEARNING.md`
+
+**Verification**
+The security rules and tests were statically reviewed against the Spring Security resource-server model. Maven, Docker, and a running Keycloak instance are unavailable in this execution environment; compilation, automated test execution, token signature validation, and live issuer/audience checks must be run locally.
