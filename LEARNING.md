@@ -127,3 +127,38 @@ A small, testable application baseline gives later persistence and identity feat
 
 **Verification**
 The project structure and dependency coordinates were checked against the Spring Boot 4.1.2 and Springdoc OpenAPI 3.2.0 documentation. The Maven build and tests still need to be run in an environment with JDK 21 and Maven installed.
+
+
+## Step 2.4 — PostgreSQL, Spring Data JPA, and Flyway
+
+**What we implemented**
+- Added Spring Data JPA, the Spring Boot Flyway starter, the PostgreSQL Flyway database module, and the PostgreSQL JDBC driver.
+- Configured the backend to connect to the application database, with environment-variable overrides for local and containerized execution.
+- Set Hibernate to validate the schema and disabled Open EntityManager in View.
+- Added the first Flyway migration for the application user profile table.
+- Added a JPA entity and repository for user profiles.
+- Kept the existing ping test as an MVC slice so it does not require a running database.
+
+**Why**
+Flyway provides a versioned, reviewable source of truth for database schema changes. Hibernate validation catches mismatches between the entity mapping and the migrated schema without silently changing the schema.
+
+**Important concepts**
+- **JPA entity:** maps a Java object to a relational table.
+- **Spring Data repository:** provides typed persistence operations without hand-writing basic CRUD SQL.
+- **Flyway migration:** an immutable, ordered SQL change recorded in `flyway_schema_history`.
+- **Schema validation:** Hibernate checks that the database schema is compatible with entity mappings; it does not create or update tables.
+- **Database boundary:** the backend connects only to the application PostgreSQL database. Keycloak's internal database remains separate.
+
+**Files changed**
+- `pom.xml`
+- `src/main/resources/application.yaml`
+- `src/main/resources/db/migration/V1__create_user_profiles.sql`
+- `src/main/java/io/github/abhi07799/platform/user/infrastructure/persistence/UserProfile.java`
+- `src/main/java/io/github/abhi07799/platform/user/infrastructure/persistence/UserProfileRepository.java`
+- `src/test/java/io/github/abhi07799/platform/system/api/SystemControllerTest.java`
+- `docs/database/README.md`
+- `README.md`
+- `LEARNING.md`
+
+**Verification**
+The migration SQL, YAML, and POM were structurally inspected. The migration has a unique Keycloak subject index and a case-insensitive unique email index. Docker and Maven runtime verification are not available in this execution environment, so Flyway execution, Hibernate schema validation, and the full test suite still need to be run locally against PostgreSQL.
