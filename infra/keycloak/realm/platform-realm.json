@@ -21,7 +21,7 @@
       "implicitFlowEnabled": false,
       "directAccessGrantsEnabled": false,
       "serviceAccountsEnabled": false,
-      "fullScopeAllowed": true
+      "fullScopeAllowed": false
     },
     {
       "clientId": "platform-swagger",
@@ -35,7 +35,7 @@
       "implicitFlowEnabled": false,
       "directAccessGrantsEnabled": false,
       "serviceAccountsEnabled": false,
-      "fullScopeAllowed": true,
+      "fullScopeAllowed": false,
       "redirectUris": [
         "http://localhost:8080/swagger-ui/oauth2-redirect.html"
       ],
