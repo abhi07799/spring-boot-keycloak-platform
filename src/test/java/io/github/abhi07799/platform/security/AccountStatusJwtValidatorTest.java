@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.dao.DataAccessResourceFailureException;
 import org.springframework.security.oauth2.core.OAuth2TokenValidatorResult;
 import org.springframework.security.oauth2.jwt.Jwt;
 
@@ -94,11 +95,23 @@ class AccountStatusJwtValidatorTest {
                 .findByKeycloakSubjectId(SUBJECT);
     }
 
+
+    @Test
+    void doesNotAcceptTokenWhenAccountStatusCannotBeChecked() {
+        when(userProfileRepository.findByKeycloakSubjectId(SUBJECT))
+                .thenThrow(new DataAccessResourceFailureException("database unavailable"));
+
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> validator.validate(jwt(SUBJECT)))
+                .isInstanceOf(DataAccessResourceFailureException.class);
+    }
+
     private Jwt jwt(String subject) {
-        return Jwt.withTokenValue("test-token")
+        Jwt.Builder builder = Jwt.withTokenValue("test-token")
                 .header("alg", "RS256")
-                .subject(subject)
-                .claim("iss", "http://localhost:8081/realms/platform")
-                .build();
+                .claim("iss", "http://localhost:8081/realms/platform");
+        if (subject != null) {
+            builder.subject(subject);
+        }
+        return builder.build();
     }
 }
