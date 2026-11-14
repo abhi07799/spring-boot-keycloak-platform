@@ -100,6 +100,16 @@ class KeycloakAdminClientTest {
     }
 
     @Test
+    void treatsOmittedEmailVerifiedFieldAsNotVerified() {
+        server.expect(requestTo("http://localhost:8081/admin/realms/platform/users/user-123"))
+                .andExpect(method(HttpMethod.GET))
+                .andRespond(withSuccess("{\"id\":\"user-123\"}", MediaType.APPLICATION_JSON));
+
+        assertThat(client.isEmailVerified("user-123")).isFalse();
+        server.verify();
+    }
+
+    @Test
     void deletesUserForRegistrationCompensation() {
         server.expect(requestTo("http://localhost:8081/admin/realms/platform/users/user-123"))
                 .andExpect(method(HttpMethod.DELETE))
