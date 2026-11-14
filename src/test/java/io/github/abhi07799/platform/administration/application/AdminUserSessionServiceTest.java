@@ -84,6 +84,20 @@ class AdminUserSessionServiceTest {
         verify(auditPersistenceService, never()).recordSessionRevocation(any(), any());
     }
 
+    @Test
+    void reportsWhenKeycloakLogoutSucceededButLocalRevocationCouldNotBePersisted() {
+        UserProfile profile = profile();
+        when(userProfileRepository.findByKeycloakSubjectId("current-subject"))
+                .thenReturn(Optional.of(profile));
+        org.mockito.Mockito.doThrow(new IllegalStateException("database unavailable"))
+                .when(auditPersistenceService).recordSessionRevocation(USER_ID, "current-subject");
+
+        assertThatThrownBy(() -> service.logoutCurrentUser("current-subject"))
+                .isInstanceOf(SessionRevocationPersistenceException.class);
+
+        verify(keycloakAdminClient).logoutUser("keycloak-user-123");
+    }
+
     private UserProfile profile() {
         UserProfile profile = org.mockito.Mockito.mock(UserProfile.class);
         when(profile.getId()).thenReturn(USER_ID);
