@@ -354,3 +354,40 @@ The API must derive the current identity from the access token rather than trust
 
 **Verification**
 Tests cover unauthenticated rejection, subject-based profile lookup, missing-profile HTTP 404, and omission of the Keycloak subject and password fields from the response. Maven is not installed in this execution environment, so compilation and automated test execution remain to be run locally with JDK 21 and Maven. Live Keycloak/PostgreSQL verification is also pending.
+
+
+## Step 3.6 — Admin-controlled privileged user provisioning
+
+**What we implemented**
+- Added `POST /api/v1/admin/users`, protected by Spring Security `ROLE_ADMIN`.
+- Added a validated request contract with a role enum that permits only `STAFF` or `ADMIN`.
+- Added an application service that creates the Keycloak identity, assigns exactly the requested `platform-api` client role, and persists the application profile.
+- Reused the existing Keycloak Admin REST client and safe registration response contract.
+- Added compensating Keycloak deletion when role assignment or profile persistence fails after identity creation.
+- Added controller tests for unauthenticated rejection, non-admin `403`, admin success, and invalid role rejection; added service tests for both supported roles, duplicate email, and compensation.
+- Documented the one-time out-of-band first-ADMIN bootstrap procedure.
+
+**Why**
+Public registration must never grant privileged access. The administrative provisioning path is separate and checks the caller's `ROLE_ADMIN` authority before it can create either a STAFF or ADMIN account. The first application ADMIN must be established outside the public API so there is no unauthenticated privilege-escalation route.
+
+**Important concepts**
+- **Role-based access control (RBAC):** the endpoint requires the `ROLE_ADMIN` authority produced from the Keycloak `platform-api` client role.
+- **Allowlisted role input:** the request enum makes `USER` and arbitrary role names invalid for this endpoint.
+- **Out-of-band bootstrap:** the first application ADMIN is created through the Keycloak console and linked to an application profile row, not through a public bootstrap endpoint.
+- **Compensating action:** if a later step fails after Keycloak user creation, the service attempts to delete that identity. This is best-effort across two independent systems, not a distributed transaction.
+
+**Files changed**
+- `src/main/java/io/github/abhi07799/platform/administration/api/AdminUserProvisioningRequest.java`
+- `src/main/java/io/github/abhi07799/platform/administration/api/AdminUserProvisioningController.java`
+- `src/main/java/io/github/abhi07799/platform/administration/application/AdminUserProvisioningService.java`
+- `src/main/java/io/github/abhi07799/platform/security/config/SecurityConfig.java`
+- `src/test/java/io/github/abhi07799/platform/administration/api/AdminUserProvisioningControllerTest.java`
+- `src/test/java/io/github/abhi07799/platform/administration/application/AdminUserProvisioningServiceTest.java`
+- `README.md`
+- `docs/security/README.md`
+- `docs/keycloak/README.md`
+- `docs/architecture/package-structure.md`
+- `LEARNING.md`
+
+**Verification**
+Tests cover the intended authorization boundary, supported roles, duplicate handling, and compensation. Maven is not installed in this execution environment, so compilation and automated test execution remain pending local verification with JDK 21 and Maven. A live Keycloak/PostgreSQL test is also required to verify the actual service-account permissions for role mapping and user deletion.
