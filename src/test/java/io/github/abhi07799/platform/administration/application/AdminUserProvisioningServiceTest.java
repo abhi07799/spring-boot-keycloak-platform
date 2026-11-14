@@ -86,7 +86,7 @@ class AdminUserProvisioningServiceTest {
         doThrow(new IllegalStateException("role assignment failed"))
                 .when(keycloakAdminClient).assignClientRole("keycloak-user-123", "platform-api", "STAFF");
 
-        assertThatThrownBy(() -> service.provision(request(AdminUserProvisioningRequest.ProvisionedRole.STAFF)))
+        assertThatThrownBy(() -> service.provision(request(AdminUserProvisioningRequest.ProvisionedRole.STAFF), "admin-subject"))
                 .isInstanceOf(RegistrationFailedException.class);
         verify(keycloakAdminClient).deleteUser("keycloak-user-123");
         verify(auditPersistenceService, never()).persistProvisionedUser(any(), any(), any());
