@@ -48,8 +48,15 @@ class AdminUserStatusServiceTest {
     void setUp() {
         service = new AdminUserStatusService(
                 userProfileRepository, keycloakAdminClient, auditPersistenceService, roleChangeLockService);
-        org.mockito.Mockito.doAnswer(invocation -> ((java.util.function.Supplier<?>) invocation.getArgument(0)).get())
-                .when(roleChangeLockService).withRoleChangeLock(org.mockito.ArgumentMatchers.any());
+        org.mockito.Mockito.doAnswer(invocation -> {
+                    try {
+                        return ((java.util.function.Supplier<?>) invocation.getArgument(0)).get();
+                    } catch (RuntimeException failure) {
+                        ((java.util.function.Consumer<RuntimeException>) invocation.getArgument(1)).accept(failure);
+                        throw failure;
+                    }
+                }).when(roleChangeLockService).withRoleChangeLock(
+                        org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any());
     }
 
     @Test
