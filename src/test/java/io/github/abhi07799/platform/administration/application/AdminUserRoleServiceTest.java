@@ -107,6 +107,35 @@ class AdminUserRoleServiceTest {
         verify(keycloakAdminClient).restoreClientRole(TARGET_SUBJECT, "platform-api", "USER");
     }
 
+
+    @Test
+    void doesNotCreateAuditEventWhenRequestedRoleIsAlreadyAssigned() {
+        when(userProfileRepository.findById(USER_ID)).thenReturn(Optional.of(profile()));
+        when(keycloakAdminClient.updateClientRole(TARGET_SUBJECT, "platform-api", "USER"))
+                .thenReturn("USER");
+
+        AdminUserRoleResponse response = service.updateRole(
+                USER_ID, UpdateAdminUserRoleRequest.Role.USER, ACTOR_SUBJECT);
+
+        assertThat(response.previousRole()).isEqualTo("USER");
+        verify(auditPersistenceService, never()).recordRoleChange(any(), any(), any(), any());
+    }
+
+    @Test
+    void reportsFailedCompensationWhenAuditTransactionCannotCommit() {
+        when(userProfileRepository.findById(USER_ID)).thenReturn(Optional.of(profile()));
+        when(keycloakAdminClient.updateClientRole(TARGET_SUBJECT, "platform-api", "STAFF"))
+                .thenReturn("USER");
+        org.mockito.Mockito.doThrow(new IllegalStateException("audit commit failed"))
+                .when(auditPersistenceService).recordRoleChange(USER_ID, ACTOR_SUBJECT, "USER", "STAFF");
+        when(keycloakAdminClient.restoreClientRole(TARGET_SUBJECT, "platform-api", "USER"))
+                .thenThrow(new IllegalStateException("Keycloak unavailable"));
+
+        assertThatThrownBy(() -> service.updateRole(
+                USER_ID, UpdateAdminUserRoleRequest.Role.STAFF, ACTOR_SUBJECT))
+                .isInstanceOf(AdminUserRoleCompensationException.class);
+    }
+
     private UserProfile profile() {
         return new UserProfile(TARGET_SUBJECT, "Test Person", "person@example.com", "+919876543210");
     }
