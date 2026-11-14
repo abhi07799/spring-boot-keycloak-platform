@@ -13,7 +13,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestClientResponseException;
 
 import java.util.List;
@@ -65,7 +64,7 @@ public class AdminUserProvisioningService {
             }
             throw new RegistrationFailedException(
                     "The identity provider could not create the account. Please try again later.", exception);
-        } catch (RestClientException | RuntimeException exception) {
+        } catch (RuntimeException exception) {
             throw new RegistrationFailedException(
                     "The identity provider could not create the account. Please try again later.", exception);
         }
