@@ -47,7 +47,7 @@ The confidential client is imported with service accounts enabled and without a 
 2. Select the `platform` realm, then open **Clients → Platform Admin Service → Credentials**.
 3. Retrieve the generated client secret and store it only in the local ignored `.env` file or a local secrets manager. Never commit it.
 4. Open **Service account roles** for `platform-admin-service`.
-5. In the `realm-management` client roles, grant only the permissions required by the backend's user lifecycle operations: start with `query-users`, `view-users`, `manage-users`, `query-clients`, and `view-clients`. Verify the exact operations against the Admin REST API calls used by the application.
+5. In the `realm-management` client roles, grant only the permissions required by the backend's user lifecycle operations: start with `query-users`, `view-users`, `manage-users`, `query-clients`, and `view-clients`. Role administration also queries the users assigned to the `platform-api/ADMIN` client role to protect the last enabled administrator. Verify that the service account can call the client-role users endpoint with its narrowly scoped `query-users`/`view-users` permissions. Verify the exact operations against the Admin REST API calls used by the application.
 6. Do not grant `realm-admin` or broad server-administrator roles to this service account.
 
 Keycloak 26.8.2 applies additional restrictions to protocol-mapper administration. This service account is not intended to create or modify clients, client scopes, or protocol mappers. Those are infrastructure/bootstrap responsibilities.
@@ -61,6 +61,7 @@ For the current backend operations, grant the service account only the realm-man
 - Read and update user account status (view-users, manage-users).
 - Query users if/when the registration workflow needs lookup (query-users, view-users).
 - Resolve the platform-api client and its roles (query-clients, view-clients).
+- Read client-role mappings, assign/remove platform-api client roles, and count enabled ADMIN role members (verify the required narrowly scoped user and role-mapping permissions in Keycloak 26.8.2).
 
 Keycloak's authorization model can vary with fine-grained admin permissions and realm configuration. Verify each operation in the local Keycloak 26.8.2 instance; do not grant realm-admin as a shortcut. Role-mapping operations may require an additional narrowly scoped permission depending on the Keycloak admin-permission configuration.
 
@@ -88,6 +89,8 @@ VALUES (gen_random_uuid(), '<KEYCLOAK_USER_ID>', '<FULL_NAME>', '<EMAIL>', '<MOB
 Keep this as a controlled, audited bootstrap operation. Do not add a public bootstrap HTTP endpoint, commit bootstrap credentials, or grant `realm-admin` to the backend service account.
 
 If role assignment or profile persistence fails after Keycloak user creation, the backend attempts to delete the newly created Keycloak user as a compensating action. This is a cross-system workflow, not a distributed ACID transaction. If the compensating delete also fails, the application logs the failure for operational follow-up; the registration request still returns a generic server error.
+
+The admin role-management endpoint `PATCH /api/v1/admin/users/{userId}/role` accepts only `USER`, `STAFF`, or `ADMIN` and replaces the target user’s existing `platform-api` client role without modifying realm or other client roles. The acting administrator cannot change their own role, and the last enabled application administrator cannot be demoted. A PostgreSQL row lock serializes role changes across application instances while the last-admin check and audit write run. Each successful change is recorded as `USER_ROLE_CHANGED` with actor subject, target profile ID, previous role, new role, and timestamp. If audit persistence fails, the backend attempts to restore the previous Keycloak role; a failed compensation requires operational reconciliation.
 
 The admin account-status endpoint `PATCH /api/v1/admin/users/{userId}/status` uses the Keycloak Admin API to enable or disable an identity and mirrors the result in the application profile table. The client first reads the full Keycloak user representation and then updates its `enabled` field, preserving other user attributes. The service updates Keycloak first and persists the application status second; if persistence fails, it attempts a compensating Keycloak update to the previous status. A failed compensation requires operational reconciliation. Because the resource server validates self-contained JWTs locally, a previously issued access token can remain usable until its expiry even after the Keycloak account is disabled.
 
