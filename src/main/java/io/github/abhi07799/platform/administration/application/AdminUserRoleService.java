@@ -35,12 +35,33 @@ public class AdminUserRoleService {
 
     public AdminUserRoleResponse updateRole(
             UUID userId, UpdateAdminUserRoleRequest.Role requestedRole, String actorSubjectId) {
-        return roleChangeLockService.withRoleChangeLock(
-                () -> updateRoleWhileLocked(userId, requestedRole, actorSubjectId));
+        RoleChangeContext context = new RoleChangeContext();
+        try {
+            return roleChangeLockService.withRoleChangeLock(
+                    () -> updateRoleWhileLocked(userId, requestedRole, actorSubjectId, context));
+        } catch (RuntimeException failure) {
+            if (context.previousRole == null || context.previousRole.equals(requestedRole.name())) {
+                throw failure;
+            }
+            UserProfile target = userProfileRepository.findById(userId)
+                    .orElseThrow(AdminUserNotFoundException::new);
+            try {
+                keycloakAdminClient.updateClientRole(
+                        target.getKeycloakSubjectId(), "platform-api", context.previousRole);
+            } catch (RuntimeException compensationFailure) {
+                log.error("Role update compensation failed for application user id {}", userId,
+                        compensationFailure);
+                throw new AdminUserRoleCompensationException(compensationFailure);
+            }
+            throw new AdminUserRoleUpdateException(failure);
+        }
     }
 
     private AdminUserRoleResponse updateRoleWhileLocked(
-            UUID userId, UpdateAdminUserRoleRequest.Role requestedRole, String actorSubjectId) {
+            UUID userId,
+            UpdateAdminUserRoleRequest.Role requestedRole,
+            String actorSubjectId,
+            RoleChangeContext context) {
         UserProfile profile = userProfileRepository.findById(userId)
                 .orElseThrow(AdminUserNotFoundException::new);
 
@@ -62,20 +83,13 @@ public class AdminUserRoleService {
             return new AdminUserRoleResponse(userId, previousRole, requestedRole.name());
         }
 
-        try {
-            auditPersistenceService.recordRoleChange(
-                    userId, actorSubjectId, previousRole, requestedRole.name());
-            return new AdminUserRoleResponse(userId, previousRole, requestedRole.name());
-        } catch (RuntimeException persistenceFailure) {
-            try {
-                keycloakAdminClient.updateClientRole(
-                        profile.getKeycloakSubjectId(), "platform-api", previousRole);
-            } catch (RuntimeException compensationFailure) {
-                log.error("Role update compensation failed for application user id {}", userId,
-                        compensationFailure);
-                throw new AdminUserRoleCompensationException(compensationFailure);
-            }
-            throw new AdminUserRoleUpdateException(persistenceFailure);
-        }
+        context.previousRole = previousRole;
+        auditPersistenceService.recordRoleChange(
+                userId, actorSubjectId, previousRole, requestedRole.name());
+        return new AdminUserRoleResponse(userId, previousRole, requestedRole.name());
+    }
+
+    private static final class RoleChangeContext {
+        private String previousRole;
     }
 }
