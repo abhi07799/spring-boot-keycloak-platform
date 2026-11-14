@@ -28,5 +28,5 @@ io.github.abhi07799.platform
 - Keep domain rules inside the owning feature; avoid cross-feature entity access.
 - Share code only when it is genuinely generic and stable.
 - Keycloak credentials remain in Keycloak. The `user` feature stores application profile data and the Keycloak subject identifier only.
-- The current-user endpoint derives identity exclusively from the validated JWT subject; it does not accept a user ID from the request.
+- The current-user read and update endpoints derive identity exclusively from the validated JWT subject; they do not accept a user ID from the request.\n- Self-service profile updates are limited to full name and mobile number. Email and credentials remain managed by Keycloak.
 - Administrative provisioning is protected by `ROLE_ADMIN`; its request role is an enum restricted to `STAFF` and `ADMIN`. Public registration remains hard-coded to `USER`.
