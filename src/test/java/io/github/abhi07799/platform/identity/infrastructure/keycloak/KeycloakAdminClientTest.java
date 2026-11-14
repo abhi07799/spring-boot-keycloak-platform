@@ -107,7 +107,7 @@ class KeycloakAdminClientTest {
                         """))
                 .andRespond(withStatus(HttpStatus.NO_CONTENT));
 
-        client.updateUserEnabled("user-123", false);
+        assertThat(client.updateUserEnabled("user-123", false)).isTrue();
         server.verify();
     }
 
