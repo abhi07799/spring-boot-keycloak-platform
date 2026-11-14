@@ -3,6 +3,7 @@ package io.github.abhi07799.platform.administration.api;
 import io.github.abhi07799.platform.administration.application.AdminUserDirectoryService;
 import io.github.abhi07799.platform.administration.application.AdminUserProvisioningService;
 import io.github.abhi07799.platform.administration.application.AdminUserStatusService;
+import io.github.abhi07799.platform.administration.application.AdminUserRoleService;
 import io.github.abhi07799.platform.identity.api.RegistrationResponse;
 import io.github.abhi07799.platform.user.api.UserProfileResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -31,14 +32,17 @@ public class AdminUserController {
     private final AdminUserProvisioningService provisioningService;
     private final AdminUserDirectoryService directoryService;
     private final AdminUserStatusService statusService;
+    private final AdminUserRoleService roleService;
 
     public AdminUserController(
             AdminUserProvisioningService provisioningService,
             AdminUserDirectoryService directoryService,
-            AdminUserStatusService statusService) {
+            AdminUserStatusService statusService,
+            AdminUserRoleService roleService) {
         this.provisioningService = provisioningService;
         this.directoryService = directoryService;
         this.statusService = statusService;
+        this.roleService = roleService;
     }
 
     @Operation(summary = "List application users (ADMIN only)")
@@ -56,6 +60,15 @@ public class AdminUserController {
             @Valid @RequestBody UpdateUserAccountStatusRequest request,
             @AuthenticationPrincipal Jwt jwt) {
         return statusService.updateEnabledStatus(userId, request.enabled(), jwt.getSubject());
+    }
+
+    @Operation(summary = "Update an application user role (ADMIN only)")
+    @PatchMapping("/{userId}/role")
+    public AdminUserRoleResponse updateUserRole(
+            @PathVariable UUID userId,
+            @Valid @RequestBody UpdateAdminUserRoleRequest request,
+            @AuthenticationPrincipal Jwt jwt) {
+        return roleService.updateRole(userId, request.role(), jwt.getSubject());
     }
 
     @Operation(summary = "Create a STAFF or ADMIN account (ADMIN only)")
