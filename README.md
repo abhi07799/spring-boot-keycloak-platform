@@ -42,6 +42,7 @@ The backend uses KEYCLOAK_ADMIN_BASE_URL=http://localhost:8081 and realm platfor
 - Update current user profile: `PUT http://localhost:8080/api/v1/users/me` (authenticated; updates full name and mobile number only).
 - Admin user directory: `GET http://localhost:8080/api/v1/admin/users` (ADMIN only; paginated, default 20 users, maximum 100 per page).
 - Admin account status: `PATCH http://localhost:8080/api/v1/admin/users/{userId}/status` (ADMIN only; body `{"enabled":false}` disables, `{"enabled":true}` re-enables).
+- Admin role management: `PATCH http://localhost:8080/api/v1/admin/users/{userId}/role` (ADMIN only; body `{"role":"USER|STAFF|ADMIN"}`).
 - Admin provisioning: `POST http://localhost:8080/api/v1/admin/users` (ADMIN only; creates `STAFF` or `ADMIN`).
 - Admin audit history: `GET http://localhost:8080/api/v1/admin/audit-events` (ADMIN only; paginated, default 20 events, maximum 100 per page).
 - Ping endpoint: http://localhost:8080/api/v1/ping (public)
