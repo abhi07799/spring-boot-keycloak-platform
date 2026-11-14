@@ -6,7 +6,22 @@ CREATE TABLE admin_audit_events (
     assigned_role VARCHAR(20),
     previous_enabled BOOLEAN,
     new_enabled BOOLEAN,
-    occurred_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+    occurred_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT ck_admin_audit_action CHECK (
+        action IN ('USER_PROVISIONED', 'USER_DISABLED', 'USER_ENABLED')
+    ),
+    CONSTRAINT ck_admin_audit_event_details CHECK (
+        (action = 'USER_PROVISIONED'
+            AND assigned_role IN ('STAFF', 'ADMIN')
+            AND previous_enabled IS NULL
+            AND new_enabled IS NULL)
+        OR
+        (action IN ('USER_DISABLED', 'USER_ENABLED')
+            AND assigned_role IS NULL
+            AND previous_enabled IS NOT NULL
+            AND new_enabled IS NOT NULL
+            AND previous_enabled <> new_enabled)
+    )
 );
 
 CREATE INDEX ix_admin_audit_events_occurred_at_id
