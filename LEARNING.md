@@ -100,7 +100,7 @@ The realm definition was generated as JSON and structurally validated. Docker Co
 
 **What we implemented**
 - Created a Java 21 Maven project using Spring Boot 4.1.2.
-- Added Spring MVC, Actuator, Bean Validation, Springdoc OpenAPI 3.2.0, and Spring Boot test dependencies.
+- Added Spring MVC, Actuator, Bean Validation, Springdoc OpenAPI 3.2.0, and dedicated Spring Boot 4 MVC test dependencies.
 - Added the main application class, a minimal versioned ping endpoint, and an MVC test.
 - Added application metadata, health endpoint exposure, and package-by-feature architecture guidance.
 - Kept database connectivity and Spring Security out of this skeleton; they are separate milestones.
@@ -112,6 +112,7 @@ A small, testable application baseline gives later persistence and identity feat
 - **Maven parent/BOM:** Spring Boot's parent manages compatible dependency versions so individual Spring dependencies do not need arbitrary version pins.
 - **Starter:** a curated dependency descriptor that brings in the modules needed for a capability.
 - **Actuator:** exposes operational endpoints such as application health.
+- **Spring Boot 4 test modules:** MVC test support is provided by the dedicated `spring-boot-starter-webmvc-test` dependency and its Boot 4 package.
 - **Package by feature:** groups code by business capability rather than creating global controller/service/repository layers.
 
 **Files changed**
