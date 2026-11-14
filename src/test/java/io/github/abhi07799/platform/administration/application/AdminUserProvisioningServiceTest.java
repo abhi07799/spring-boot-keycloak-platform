@@ -45,8 +45,15 @@ class AdminUserProvisioningServiceTest {
     void setUp() {
         service = new AdminUserProvisioningService(
                 keycloakAdminClient, userProfileRepository, auditPersistenceService, roleChangeLockService);
-        org.mockito.Mockito.lenient().doAnswer(invocation -> ((java.util.function.Supplier<?>) invocation.getArgument(0)).get())
-                .when(roleChangeLockService).withRoleChangeLock(org.mockito.ArgumentMatchers.any());
+        org.mockito.Mockito.lenient().doAnswer(invocation -> {
+                    try {
+                        return ((java.util.function.Supplier<?>) invocation.getArgument(0)).get();
+                    } catch (RuntimeException failure) {
+                        ((java.util.function.Consumer<RuntimeException>) invocation.getArgument(1)).accept(failure);
+                        throw failure;
+                    }
+                }).when(roleChangeLockService).withRoleChangeLock(
+                        org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any());
     }
 
     @Test
