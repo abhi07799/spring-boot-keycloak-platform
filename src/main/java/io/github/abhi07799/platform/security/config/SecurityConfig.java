@@ -1,6 +1,8 @@
 package io.github.abhi07799.platform.security.config;
 
+import io.github.abhi07799.platform.security.AccountStatusJwtValidator;
 import io.github.abhi07799.platform.security.KeycloakRoleConverter;
+import io.github.abhi07799.platform.user.infrastructure.persistence.UserProfileRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -50,7 +52,9 @@ public class SecurityConfig {
     }
 
     @Bean
-    JwtDecoder jwtDecoder(@Value("${spring.security.oauth2.resourceserver.jwt.issuer-uri}") String issuerUri) {
+    JwtDecoder jwtDecoder(
+            @Value("${spring.security.oauth2.resourceserver.jwt.issuer-uri}") String issuerUri,
+            UserProfileRepository userProfileRepository) {
         String normalizedIssuer = issuerUri.replaceAll("/+$", "");
         String jwkSetUri = normalizedIssuer + "/protocol/openid-connect/certs";
 
@@ -61,7 +65,9 @@ public class SecurityConfig {
                 : OAuth2TokenValidatorResult.failure(
                         new OAuth2Error("invalid_token", "Required audience platform-api is missing", null));
 
-        decoder.setJwtValidator(new DelegatingOAuth2TokenValidator<>(issuerValidator, audienceValidator));
+        OAuth2TokenValidator<Jwt> accountStatusValidator = new AccountStatusJwtValidator(userProfileRepository);
+        decoder.setJwtValidator(new DelegatingOAuth2TokenValidator<>(
+                issuerValidator, audienceValidator, accountStatusValidator));
         return decoder;
     }
 
