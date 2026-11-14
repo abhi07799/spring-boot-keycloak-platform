@@ -115,7 +115,9 @@ class AdminUserProvisioningControllerTest {
         mockMvc.perform(patch("/api/v1/admin/users/{userId}/status", userId)
                         .with(jwt().authorities(new SimpleGrantedAuthority("ROLE_ADMIN")))
                         .contentType("application/json")
-                        .content("{\\"enabled\\":false}"))
+                        .content("""
+                                {"enabled":false}
+                                """))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.enabled").value(false));
 
@@ -128,7 +130,9 @@ class AdminUserProvisioningControllerTest {
         mockMvc.perform(patch("/api/v1/admin/users/{userId}/status", userId)
                         .with(jwt().authorities(new SimpleGrantedAuthority("ROLE_STAFF")))
                         .contentType("application/json")
-                        .content("{\\"enabled\\":false}"))
+                        .content("""
+                                {"enabled":false}
+                                """))
                 .andExpect(status().isForbidden());
     }
 
