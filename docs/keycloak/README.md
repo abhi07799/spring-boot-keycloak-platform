@@ -4,7 +4,7 @@
 
 The repository provisions a realm named `platform` from `infra/keycloak/realm/platform-realm.json`. Keycloak imports it at startup only when a realm with that name does not already exist. The realm enables `verifyEmail` and `resetPasswordAllowed`; SMTP is deliberately not embedded in the tracked realm export.
 
-Direct Keycloak self-registration is disabled. The platform's public registration flow will be implemented by the backend and will assign only the `USER` client role.
+Direct Keycloak self-registration is disabled. The backend's public registration flow assigns only the `USER` client role and asks Keycloak to send the email-verification action link.
 
 ## Clients
 
