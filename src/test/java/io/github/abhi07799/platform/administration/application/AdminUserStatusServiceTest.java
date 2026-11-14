@@ -119,7 +119,7 @@ class AdminUserStatusServiceTest {
                 .isInstanceOf(AdminUserStatusUpdateException.class);
         InOrder order = inOrder(keycloakAdminClient);
         order.verify(keycloakAdminClient).updateUserEnabled(KEYCLOAK_SUBJECT, false);
-        order.verify(keycloakAdminClient).updateUserEnabled(KEYCLOAK_SUBJECT, true);
+        order.verify(keycloakAdminClient).restoreUserEnabled(KEYCLOAK_SUBJECT, true);
     }
 
     @Test
@@ -131,7 +131,7 @@ class AdminUserStatusServiceTest {
         when(auditPersistenceService.persistStatusChange(USER_ID, "admin-subject", true, false))
                 .thenThrow(new DataIntegrityViolationException("database unavailable"));
         doThrow(new IllegalStateException("Keycloak unavailable"))
-                .when(keycloakAdminClient).updateUserEnabled(KEYCLOAK_SUBJECT, true);
+                .when(keycloakAdminClient).restoreUserEnabled(KEYCLOAK_SUBJECT, true);
 
         assertThatThrownBy(() -> service.updateEnabledStatus(USER_ID, false, "admin-subject"))
                 .isInstanceOf(AdminUserStatusCompensationException.class);
