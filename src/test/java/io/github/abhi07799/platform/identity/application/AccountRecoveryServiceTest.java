@@ -12,6 +12,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.Optional;
 import java.util.UUID;
 
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -91,8 +92,8 @@ class AccountRecoveryServiceTest {
 
     private UserProfile profile(boolean enabled) {
         UserProfile profile = org.mockito.Mockito.mock(UserProfile.class);
-        when(profile.getId()).thenReturn(UUID.fromString("b0e6d5a1-7d25-4a6e-8f44-19e27a5a1001"));
-        when(profile.getKeycloakSubjectId()).thenReturn("keycloak-subject");
+        lenient().when(profile.getId()).thenReturn(UUID.fromString("b0e6d5a1-7d25-4a6e-8f44-19e27a5a1001"));
+        lenient().when(profile.getKeycloakSubjectId()).thenReturn("keycloak-subject");
         when(profile.isEnabled()).thenReturn(enabled);
         return profile;
     }
