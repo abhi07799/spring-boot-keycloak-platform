@@ -67,7 +67,7 @@ No password, password hash, or Keycloak internal database field is stored in the
 - V2 adds the mirrored `user_profiles.enabled` flag.
 - V3 creates the append-only `admin_audit_events` table for provisioning and account-status actions.
 - V4 extends audit records with previous/new application roles and adds the `USER_ROLE_CHANGED` event type.
-- V5 creates and seeds the singleton `admin_role_change_lock` row. Role-management transactions lock this row with `SELECT ... FOR UPDATE` while checking the last enabled ADMIN and writing the audit event, serializing role changes across application instances.
+Role-management, ADMIN provisioning, and account-status operations use a PostgreSQL session-level advisory lock (no additional lock table or migration is required). The session lock is held across the application transaction and any compensating Keycloak call, including after transaction rollback.
 
 ## Verify the migrations
 
