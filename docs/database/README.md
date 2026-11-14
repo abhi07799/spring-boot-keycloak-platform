@@ -67,7 +67,7 @@ No password, password hash, or Keycloak internal database field is stored in the
 - V2 adds the mirrored `user_profiles.enabled` flag.
 - V3 creates the append-only `admin_audit_events` table for provisioning and account-status actions.
 - V4 extends audit records with previous/new application roles and adds the `USER_ROLE_CHANGED` event type.
-Role-management, ADMIN provisioning, and account-status operations use a PostgreSQL session-level advisory lock (no additional lock table or migration is required). The session lock is held across the application transaction and any compensating Keycloak call, including after transaction rollback.
+Role-management, ADMIN provisioning, and account-status operations use a PostgreSQL session-level advisory lock (no additional lock table or migration is required). The session lock is held across the application transaction and any compensating Keycloak call, including after transaction rollback. The lock uses one pooled connection while the transaction manager uses another, so configure the datasource pool for at least two connections (HikariCP defaults to a larger pool).
 
 ## Verify the migrations
 
