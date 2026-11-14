@@ -95,8 +95,8 @@ public class RegistrationService {
         try {
             keycloakAdminClient.deleteUser(keycloakUserId);
         } catch (RuntimeException compensationFailure) {
-            log.error("Registration compensation failed after an unsuccessful profile registration",
-                    compensationFailure);
+            log.error("Registration compensation failed for Keycloak user id {}",
+                    keycloakUserId, compensationFailure);
             throw new RegistrationCompensationException(registrationFailure, compensationFailure);
         }
     }
