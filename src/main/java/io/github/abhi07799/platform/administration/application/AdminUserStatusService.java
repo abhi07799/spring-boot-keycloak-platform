@@ -30,10 +30,10 @@ public class AdminUserStatusService {
     public UserProfileResponse updateEnabledStatus(UUID userId, boolean enabled) {
         UserProfile profile = userProfileRepository.findById(userId)
                 .orElseThrow(AdminUserNotFoundException::new);
-        boolean previousEnabled = profile.isEnabled();
-
+        boolean previousKeycloakEnabled;
         try {
-            keycloakAdminClient.updateUserEnabled(profile.getKeycloakSubjectId(), enabled);
+            previousKeycloakEnabled = keycloakAdminClient.updateUserEnabled(
+                    profile.getKeycloakSubjectId(), enabled);
         } catch (RuntimeException exception) {
             throw new KeycloakAccountStatusUpdateException(exception);
         }
@@ -44,7 +44,7 @@ public class AdminUserStatusService {
             return UserProfileResponse.from(savedProfile);
         } catch (RuntimeException persistenceFailure) {
             try {
-                keycloakAdminClient.updateUserEnabled(profile.getKeycloakSubjectId(), previousEnabled);
+                keycloakAdminClient.updateUserEnabled(profile.getKeycloakSubjectId(), previousKeycloakEnabled);
             } catch (RuntimeException compensationFailure) {
                 log.error("Account status compensation failed for application user id {}", userId,
                         compensationFailure);
