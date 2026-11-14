@@ -237,7 +237,7 @@ Springdoc's documented Swagger UI OAuth properties and Keycloak's OIDC authoriza
 ## Step 3.3 — Keycloak Admin REST API client
 
 **What we implemented**
-- Added Spring Security OAuth2 Client support alongside the existing resource-server support.
+- Added Spring Security OAuth2 Client support alongside the existing resource-server support, plus Spring Boot's RestClient starter for imperative Admin REST calls.
 - Configured a separate confidential platform-admin-service client registration using the Client Credentials grant and HTTP Basic client authentication.
 - Added an OAuth2AuthorizedClientManager backed by the authorized-client service to obtain and reuse service-account access tokens.
 - Added a typed Keycloak Admin REST API client for creating users and assigning client roles.
