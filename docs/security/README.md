@@ -22,6 +22,7 @@ Only the three roles defined for the `platform-api` client are accepted. Roles f
 ## HTTP access policy
 
 Public:
+- `POST /api/v1/auth/register` (registration only; assigns `USER`)
 - `GET /api/v1/ping`
 - `/actuator/health` and its subpaths
 - Swagger UI and OpenAPI document endpoints
@@ -51,7 +52,11 @@ Required environment variables:
 - KEYCLOAK_ADMIN_REALM: defaults to platform.
 - KEYCLOAK_ADMIN_TOKEN_URI: optional token endpoint override; defaults to the local platform realm token endpoint.
 
-The Admin API client supports creating a Keycloak user and assigning a client role by resolving the Keycloak internal client UUID first. These are internal service methods, not public endpoints. User-registration orchestration and authorization policy will be added in later milestones.
+The Admin API client supports creating, deleting, and assigning a client role to Keycloak users. Public registration is implemented at `POST /api/v1/auth/register`; callers cannot select a role. The workflow always assigns only `platform-api/USER` and then persists the profile in the application database. If a later step fails, the service attempts to delete the Keycloak user as compensation.
+
+The registration payload is validated (email, full name, mobile number, and a password of 12–128 characters). Duplicate email is returned as HTTP 409, invalid input as HTTP 400, and registration failures as a generic HTTP 500 response. The password is never persisted in the application database or returned in the response.
+
+The local imported realm currently has email verification disabled. Enable Keycloak email verification and configure SMTP before production use.
 
 ## Local configuration
 

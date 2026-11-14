@@ -37,6 +37,7 @@ The backend is a Maven-based Spring MVC application secured as a stateless OAuth
 
 The backend uses KEYCLOAK_ADMIN_BASE_URL=http://localhost:8081 and realm platform by default. If running the backend inside Compose, use http://keycloak:8080 for the admin base URL and ensure the configured issuer/token endpoint is reachable from that container.
 
+- Registration endpoint: `POST http://localhost:8080/api/v1/auth/register` (public; assigns only `USER`).
 - Ping endpoint: http://localhost:8080/api/v1/ping (public)
 - Swagger UI: http://localhost:8080/swagger-ui.html (Keycloak OAuth2 + PKCE)
 - OpenAPI JSON: http://localhost:8080/v3/api-docs

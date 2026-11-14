@@ -63,7 +63,11 @@ For the current backend operations, grant the service account only the realm-man
 
 Keycloak's authorization model can vary with fine-grained admin permissions and realm configuration. Verify each operation in the local Keycloak 26.8.2 instance; do not grant realm-admin as a shortcut. Role-mapping operations may require an additional narrowly scoped permission depending on the Keycloak admin-permission configuration.
 
-The backend integration currently provides internal methods to create a user and assign a client role. It does not expose these privileged methods through an HTTP controller in this milestone.
+The public backend registration endpoint is `POST /api/v1/auth/register`. It accepts full name, email, mobile number, and password; creates the identity through the Admin REST API; assigns only the `USER` client role under `platform-api`; and persists the profile in the application database. Passwords are sent directly to Keycloak and are never stored in the application database or returned by the API.
+
+If role assignment or profile persistence fails after Keycloak user creation, the backend attempts to delete the newly created Keycloak user as a compensating action. This is a cross-system workflow, not a distributed ACID transaction. If the compensating delete also fails, the application logs the failure for operational follow-up; the registration request still returns a generic server error.
+
+The current imported realm has `verifyEmail: false`. Email verification is therefore not enforced in this learning environment. Before production, configure SMTP and enable Keycloak email verification; retain `emailVerified=false` for newly registered accounts.
 
 ### Local backend environment
 

@@ -55,6 +55,17 @@ class KeycloakAdminClientTest {
     }
 
     @Test
+    void deletesUserForRegistrationCompensation() {
+        server.expect(requestTo("http://localhost:8081/admin/realms/platform/users/user-123"))
+                .andExpect(method(HttpMethod.DELETE))
+                .andExpect(header("Authorization", "Bearer service-token"))
+                .andRespond(withStatus(HttpStatus.NO_CONTENT));
+
+        client.deleteUser("user-123");
+        server.verify();
+    }
+
+    @Test
     void assignsClientRoleUsingResolvedClientUuidAndRoleRepresentation() {
         server.expect(requestTo("http://localhost:8081/admin/realms/platform/clients?clientId=platform-api"))
                 .andExpect(method(HttpMethod.GET))

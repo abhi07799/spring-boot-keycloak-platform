@@ -10,4 +10,6 @@ public interface UserProfileRepository extends JpaRepository<UserProfile, UUID> 
     Optional<UserProfile> findByKeycloakSubjectId(String keycloakSubjectId);
 
     Optional<UserProfile> findByEmailIgnoreCase(String email);
+
+    boolean existsByEmailIgnoreCase(String email);
 }

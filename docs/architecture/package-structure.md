@@ -8,8 +8,11 @@ io.github.abhi07799.platform
 ├── common/                 # Shared technical primitives; keep this small
 ├── system/
 │   └── api/                # Operational endpoints (for example, ping)
-├── identity/               # Keycloak integration and identity workflows
-├── user/                   # Application user profile and registration
+├── identity/
+│   ├── api/                # Registration endpoint and request/response contracts
+│   ├── application/        # Registration use case and orchestration
+│   └── infrastructure/     # Keycloak Admin REST API integration
+├── user/                   # Application user profile and persistence
 └── administration/         # Privileged user provisioning and admin use cases
 ```
 
