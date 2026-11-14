@@ -4,6 +4,8 @@ import java.net.URI;
 import java.util.List;
 import java.util.Map;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpHeaders;
@@ -15,6 +17,7 @@ import org.springframework.web.client.RestClient;
 @Component
 public class KeycloakAdminClient {
 
+    private static final Logger log = LoggerFactory.getLogger(KeycloakAdminClient.class);
     private static final List<String> PLATFORM_ROLES = List.of("USER", "STAFF", "ADMIN");
 
     private final KeycloakAdminTokenProvider tokenProvider;
@@ -143,6 +146,8 @@ public class KeycloakAdminClient {
             try {
                 removeClientRoleMapping(userId, clientUuid, requestedRole);
             } catch (RuntimeException compensationFailure) {
+                log.error("Could not remove newly assigned platform role {} after failing to remove {} for Keycloak user {}",
+                        targetRole, previousRole.name(), userId, compensationFailure);
                 removalFailure.addSuppressed(compensationFailure);
             }
             throw removalFailure;
