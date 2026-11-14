@@ -15,8 +15,28 @@ A learning-oriented backend platform built with Java 21, Spring Boot 4.1.2, Keyc
 | Spring Boot | 4.1.2 |
 | Keycloak | 26.8.2 |
 | PostgreSQL | 16 |
-| Springdoc OpenAPI | 3.2.x |
+| Springdoc OpenAPI | 3.2.0 |
 | Migrations | Flyway |
+
+## Backend skeleton
+
+The backend is a Maven-based Spring MVC application.
+
+### Prerequisites
+- JDK 21
+- Apache Maven 3.6.3+
+
+### Run locally
+```bash
+mvn spring-boot:run
+```
+
+- Ping endpoint: http://localhost:8080/api/v1/ping
+- Swagger UI: http://localhost:8080/swagger-ui.html
+- OpenAPI JSON: http://localhost:8080/v3/api-docs
+- Actuator health: http://localhost:8080/actuator/health
+
+The current skeleton does not connect to PostgreSQL or Keycloak yet. Persistence, Flyway migrations, and OAuth2 resource-server security are added in subsequent milestones.
 
 ## Architecture decisions
 - Modular monolith; no frontend application.
@@ -33,13 +53,13 @@ A learning-oriented backend platform built with Java 21, Spring Boot 4.1.2, Keyc
 - `platform-admin-service`: confidential service-account client for backend Admin REST API calls.
 - Full Scope Allowed is disabled; Swagger receives only explicitly mapped API client roles.
 
-See [Keycloak configuration](docs/keycloak/README.md) and [local infrastructure](docs/docker/README.md).
+See [Keycloak configuration](docs/keycloak/README.md), [local infrastructure](docs/docker/README.md), and [backend package structure](docs/architecture/package-structure.md).
 
 ## Branch workflow
 - `main`: stable baseline.
 - `develop`: integration branch.
 - `step1/initial-project-setup`: initial repository baseline.
-- Later milestones use numbered prefixes such as `step2.1/`, `step2.2/`, and `step3/`.
+- Later milestones use numbered prefixes such as `step2.1/`, `step2.2/`, and `step2.3/`.
 
 ## Learning journal
 See [LEARNING.md](LEARNING.md).
