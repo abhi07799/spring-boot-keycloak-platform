@@ -18,8 +18,8 @@ io.github.abhi07799.platform
 │   └── infrastructure/
 │       └── persistence/    # Application profile entity and repository
 └── administration/
-    ├── api/                # ADMIN-only user directory, provisioning, account status, and audit endpoints
-    ├── application/        # User listing, provisioning, account status, and audit workflows
+    ├── api/                # ADMIN-only user directory, provisioning, account status, role management, and audit endpoints
+    ├── application/        # User listing, provisioning, account status, role management, and audit workflows
     └── infrastructure/
         └── persistence/    # Append-only administrative audit events and repository
 ```
