@@ -59,6 +59,8 @@ class AdminUserProvisioningControllerTest {
                 .andExpect(status().isUnauthorized());
         mockMvc.perform(get("/api/v1/admin/users"))
                 .andExpect(status().isUnauthorized());
+        mockMvc.perform(patch("/api/v1/admin/users/{userId}/status", UUID.fromString("f7f5d5b5-1f75-4a39-9c51-9a5d7b3d5f11")))
+                .andExpect(status().isUnauthorized());
     }
 
     @Test
