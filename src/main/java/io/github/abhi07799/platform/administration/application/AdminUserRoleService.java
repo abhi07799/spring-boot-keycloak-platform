@@ -3,6 +3,7 @@ package io.github.abhi07799.platform.administration.application;
 import io.github.abhi07799.platform.administration.api.AdminUserRoleResponse;
 import io.github.abhi07799.platform.administration.api.UpdateAdminUserRoleRequest;
 import io.github.abhi07799.platform.identity.infrastructure.keycloak.KeycloakAdminClient;
+import io.github.abhi07799.platform.identity.infrastructure.keycloak.KeycloakLastAdminException;
 import io.github.abhi07799.platform.user.infrastructure.persistence.UserProfile;
 import io.github.abhi07799.platform.user.infrastructure.persistence.UserProfileRepository;
 import org.slf4j.Logger;
@@ -42,8 +43,8 @@ public class AdminUserRoleService {
         try {
             previousRole = keycloakAdminClient.updateClientRole(
                     profile.getKeycloakSubjectId(), "platform-api", requestedRole.name());
-        } catch (LastAdminProtectionException | AdminRoleStateException exception) {
-            throw exception;
+        } catch (KeycloakLastAdminException exception) {
+            throw new LastAdminProtectionException();
         } catch (RuntimeException exception) {
             throw new KeycloakRoleUpdateException(exception);
         }
