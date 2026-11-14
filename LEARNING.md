@@ -317,3 +317,40 @@ Keycloak owns authentication credentials, while the application database owns th
 
 **Verification**
 The public registration route is explicitly permitted by the stateless security filter chain; all other non-public API paths still require a valid bearer token. Tests cover public endpoint access, validation, password omission from the response, default-role assignment, duplicate handling, and compensating deletion. Maven and a running Keycloak/PostgreSQL environment are not available here, so compilation, automated test execution, SMTP/email verification, and end-to-end registration remain to be run locally.
+
+
+
+## Step 3.5 — Authenticated current-user profile API
+
+**What we implemented**
+- Added authenticated `GET /api/v1/users/me`.
+- Resolved the caller's application profile by looking up the validated Keycloak JWT `sub` claim in PostgreSQL.
+- Added a response DTO containing the application profile fields and timestamps, excluding the Keycloak subject identifier and credential data.
+- Added an HTTP 404 Problem Detail response when the authenticated subject has no application profile.
+- Added MVC security/response tests and service-level repository lookup tests.
+- Documented the endpoint and the identity-resolution boundary.
+
+**Why**
+The API must derive the current identity from the access token rather than trusting a user ID supplied by the caller. This prevents a caller from changing a path or query parameter to retrieve another user's profile. The JWT subject is the stable link between Keycloak identity and the application-owned profile.
+
+**Important concepts**
+- **JWT subject (`sub`):** identifies the authenticated principal in the token. The API uses this value to find the matching application profile.
+- **Principal-derived authorization:** the endpoint does not accept a user ID; the request's validated principal determines which profile is returned.
+- **Data minimization:** the response includes profile fields needed by the client, not the internal Keycloak subject or authentication credentials.
+- **404 profile state:** a valid authenticated identity may still have no corresponding application profile; this is reported as not found rather than exposing another user's data.
+
+**Files changed**
+- `src/main/java/io/github/abhi07799/platform/user/api/UserProfileController.java`
+- `src/main/java/io/github/abhi07799/platform/user/api/UserProfileResponse.java`
+- `src/main/java/io/github/abhi07799/platform/user/api/UserProfileExceptionHandler.java`
+- `src/main/java/io/github/abhi07799/platform/user/application/UserProfileService.java`
+- `src/main/java/io/github/abhi07799/platform/user/application/UserProfileNotFoundException.java`
+- `src/test/java/io/github/abhi07799/platform/user/api/UserProfileControllerTest.java`
+- `src/test/java/io/github/abhi07799/platform/user/application/UserProfileServiceTest.java`
+- `README.md`
+- `docs/security/README.md`
+- `docs/architecture/package-structure.md`
+- `LEARNING.md`
+
+**Verification**
+Tests cover unauthenticated rejection, subject-based profile lookup, missing-profile HTTP 404, and omission of the Keycloak subject and password fields from the response. Maven is not installed in this execution environment, so compilation and automated test execution remain to be run locally with JDK 21 and Maven. Live Keycloak/PostgreSQL verification is also pending.
