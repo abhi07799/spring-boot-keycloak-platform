@@ -23,15 +23,18 @@ public class KeycloakAdminClient {
     private final KeycloakAdminTokenProvider tokenProvider;
     private final RestClient restClient;
     private final String realm;
+    private final int actionTokenLifespanSeconds;
 
     public KeycloakAdminClient(
             KeycloakAdminTokenProvider tokenProvider,
             RestClient.Builder restClientBuilder,
             @Value("${keycloak.admin.base-url}") String baseUrl,
-            @Value("${keycloak.admin.realm}") String realm) {
+            @Value("${keycloak.admin.realm}") String realm,
+            @Value("${keycloak.admin.action-token-lifespan-seconds:900}") int actionTokenLifespanSeconds) {
         this.tokenProvider = tokenProvider;
         this.restClient = restClientBuilder.baseUrl(baseUrl).build();
         this.realm = realm;
+        this.actionTokenLifespanSeconds = actionTokenLifespanSeconds;
     }
 
     public String createUser(KeycloakUserRepresentation user) {
@@ -108,6 +111,44 @@ public class KeycloakAdminClient {
                 .header(HttpHeaders.AUTHORIZATION, bearerToken())
                 .retrieve()
                 .toBodilessEntity();
+    }
+
+    /** Sends a Keycloak action-token email that lets the user choose a new password. */
+    public void sendPasswordResetEmail(String userId) {
+        restClient.put()
+                .uri(uriBuilder -> uriBuilder
+                        .path("/admin/realms/{realm}/users/{userId}/execute-actions-email")
+                        .queryParam("lifespan", actionTokenLifespanSeconds)
+                        .build(realm, userId))
+                .header(HttpHeaders.AUTHORIZATION, bearerToken())
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(List.of("UPDATE_PASSWORD"))
+                .retrieve()
+                .toBodilessEntity();
+    }
+
+    /** Sends Keycloak's built-in email verification action-token message. */
+    public void sendVerifyEmail(String userId) {
+        restClient.put()
+                .uri(uriBuilder -> uriBuilder
+                        .path("/admin/realms/{realm}/users/{userId}/send-verify-email")
+                        .queryParam("lifespan", actionTokenLifespanSeconds)
+                        .build(realm, userId))
+                .header(HttpHeaders.AUTHORIZATION, bearerToken())
+                .retrieve()
+                .toBodilessEntity();
+    }
+
+    public boolean isEmailVerified(String userId) {
+        Map<String, Object> user = restClient.get()
+                .uri("/admin/realms/{realm}/users/{userId}", realm, userId)
+                .header(HttpHeaders.AUTHORIZATION, bearerToken())
+                .retrieve()
+                .body(new ParameterizedTypeReference<>() { });
+        if (user == null || !(user.get("emailVerified") instanceof Boolean emailVerified)) {
+            throw new IllegalStateException("Keycloak user representation did not include emailVerified: " + userId);
+        }
+        return emailVerified;
     }
 
     public void deleteUser(String userId) {
