@@ -36,11 +36,17 @@ class AdminUserProvisioningServiceTest {
     @Mock
     private AdminAuditPersistenceService auditPersistenceService;
 
+    @Mock
+    private AdminRoleChangeLockService roleChangeLockService;
+
     private AdminUserProvisioningService service;
 
     @BeforeEach
     void setUp() {
-        service = new AdminUserProvisioningService(keycloakAdminClient, userProfileRepository, auditPersistenceService);
+        service = new AdminUserProvisioningService(
+                keycloakAdminClient, userProfileRepository, auditPersistenceService, roleChangeLockService);
+        org.mockito.Mockito.doAnswer(invocation -> ((java.util.function.Supplier<?>) invocation.getArgument(0)).get())
+                .when(roleChangeLockService).withRoleChangeLock(org.mockito.ArgumentMatchers.any());
     }
 
     @Test
