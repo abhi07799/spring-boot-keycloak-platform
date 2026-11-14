@@ -55,6 +55,16 @@ public class AdminAuditPersistenceService {
     }
 
     @Transactional
+    public void recordSessionRevocation(UUID userId, String actorSubjectId) {
+        UserProfile profile = userProfileRepository.findById(userId)
+                .orElseThrow(AdminUserNotFoundException::new);
+        profile.markAuthorizationUpdated();
+        userProfileRepository.saveAndFlush(profile);
+        auditEventRepository.saveAndFlush(new AdminAuditEvent(
+                actorSubjectId, "USER_SESSIONS_REVOKED", userId, null, null, null, null, null));
+    }
+
+    @Transactional
     public void recordRoleChange(UUID userId, String actorSubjectId, String previousRole, String newRole) {
         UserProfile profile = userProfileRepository.findById(userId)
                 .orElseThrow(AdminUserNotFoundException::new);
