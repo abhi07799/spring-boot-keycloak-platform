@@ -69,6 +69,8 @@ No password, password hash, or Keycloak internal database field is stored in the
 - V4 extends audit records with previous/new application roles and adds the `USER_ROLE_CHANGED` event type.
 - V5 adds `user_profiles.authorization_updated_at`, used to reject access tokens issued before a role, status, or session-revocation change.
 - V6 adds the `USER_SESSIONS_REVOKED` audit event type.
+
+Password reset and email verification state remain owned by Keycloak; the application profile table does not store passwords, reset tokens, or email action tokens.
 Role-management, ADMIN provisioning, account-status, and session-revocation operations use a PostgreSQL session-level advisory lock (no additional lock table or migration is required). The session lock is held across the application transaction and any compensating Keycloak call, including after transaction rollback. The lock uses one pooled connection while the transaction manager uses another, so configure the datasource pool for at least two connections (HikariCP defaults to a larger pool).
 
 ## Verify the migrations
