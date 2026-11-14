@@ -58,7 +58,8 @@ The backend uses the platform-admin-service confidential client with the OAuth 2
 
 For the current backend operations, grant the service account only the realm-management client roles required to:
 - Create users (manage-users).
-- Read and update user account status (view-users, manage-users).\n- Query users if/when the registration workflow needs lookup (query-users, view-users).
+- Read and update user account status (view-users, manage-users).
+- Query users if/when the registration workflow needs lookup (query-users, view-users).
 - Resolve the platform-api client and its roles (query-clients, view-clients).
 
 Keycloak's authorization model can vary with fine-grained admin permissions and realm configuration. Verify each operation in the local Keycloak 26.8.2 instance; do not grant realm-admin as a shortcut. Role-mapping operations may require an additional narrowly scoped permission depending on the Keycloak admin-permission configuration.
@@ -88,7 +89,9 @@ Keep this as a controlled, audited bootstrap operation. Do not add a public boot
 
 If role assignment or profile persistence fails after Keycloak user creation, the backend attempts to delete the newly created Keycloak user as a compensating action. This is a cross-system workflow, not a distributed ACID transaction. If the compensating delete also fails, the application logs the failure for operational follow-up; the registration request still returns a generic server error.
 
-The admin account-status endpoint `PATCH /api/v1/admin/users/{userId}/status` uses the Keycloak Admin API to enable or disable an identity and mirrors the result in the application profile table. The client first reads the full Keycloak user representation and then updates its `enabled` field, preserving other user attributes. The service updates Keycloak first and persists the application status second; if persistence fails, it attempts a compensating Keycloak update to the previous status. A failed compensation requires operational reconciliation. Because the resource server validates self-contained JWTs locally, a previously issued access token can remain usable until its expiry even after the Keycloak account is disabled.\n\nThe current imported realm has `verifyEmail: false`. Email verification is therefore not enforced in this learning environment. Before production, configure SMTP and enable Keycloak email verification; retain `emailVerified=false` for newly registered accounts.
+The admin account-status endpoint `PATCH /api/v1/admin/users/{userId}/status` uses the Keycloak Admin API to enable or disable an identity and mirrors the result in the application profile table. The client first reads the full Keycloak user representation and then updates its `enabled` field, preserving other user attributes. The service updates Keycloak first and persists the application status second; if persistence fails, it attempts a compensating Keycloak update to the previous status. A failed compensation requires operational reconciliation. Because the resource server validates self-contained JWTs locally, a previously issued access token can remain usable until its expiry even after the Keycloak account is disabled.
+
+The current imported realm has `verifyEmail: false`. Email verification is therefore not enforced in this learning environment. Before production, configure SMTP and enable Keycloak email verification; retain `emailVerified=false` for newly registered accounts.
 
 ### Local backend environment
 
