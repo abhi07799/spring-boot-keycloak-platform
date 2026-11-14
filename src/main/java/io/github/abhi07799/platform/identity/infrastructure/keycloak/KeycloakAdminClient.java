@@ -57,6 +57,15 @@ public class KeycloakAdminClient {
     }
 
     public boolean updateUserEnabled(String userId, boolean enabled) {
+        return setUserEnabled(userId, enabled, true);
+    }
+
+    /** Restores a known prior state after an application-side persistence failure. */
+    public boolean restoreUserEnabled(String userId, boolean enabled) {
+        return setUserEnabled(userId, enabled, false);
+    }
+
+    private boolean setUserEnabled(String userId, boolean enabled, boolean protectLastAdmin) {
         Map<String, Object> user = restClient.get()
                 .uri("/admin/realms/{realm}/users/{userId}", realm, userId)
                 .header(HttpHeaders.AUTHORIZATION, bearerToken())
@@ -70,6 +79,15 @@ public class KeycloakAdminClient {
         Object enabledValue = user.get("enabled");
         if (!(enabledValue instanceof Boolean previousEnabled)) {
             throw new IllegalStateException("Keycloak user representation did not include an enabled flag: " + userId);
+        }
+
+        if (protectLastAdmin && previousEnabled && !enabled) {
+            String clientUuid = resolveClientUuid("platform-api");
+            boolean isPlatformAdmin = getClientRoleMappings(userId, clientUuid).stream()
+                    .anyMatch(role -> "ADMIN".equals(role.name()));
+            if (isPlatformAdmin && !hasAtLeastTwoEnabledAdministrators(clientUuid)) {
+                throw new KeycloakLastAdminException();
+            }
         }
 
         user.put("enabled", enabled);
