@@ -83,7 +83,7 @@ class AdminUserProvisioningControllerTest {
                         .with(jwt().authorities(new SimpleGrantedAuthority("ROLE_ADMIN"))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.users[0].fullName").value("Test Person"))
-                .andExpect(jsonPath("$.users[0].email").value("person@example.com"))
+                .andExpect(jsonPath("$.users[0].email").value("person@example.com"))\n                .andExpect(jsonPath("$.users[0].enabled").value(true))
                 .andExpect(jsonPath("$.page").value(0))
                 .andExpect(jsonPath("$.size").value(20))
                 .andExpect(jsonPath("$.totalElements").value(1))
