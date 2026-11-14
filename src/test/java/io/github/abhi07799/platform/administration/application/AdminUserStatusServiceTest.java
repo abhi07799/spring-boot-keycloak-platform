@@ -48,6 +48,7 @@ class AdminUserStatusServiceTest {
                 KEYCLOAK_SUBJECT, "Test Person", "person@example.com", "+919876543210");
         when(userProfileRepository.findById(USER_ID)).thenReturn(Optional.of(profile));
         when(userProfileRepository.saveAndFlush(profile)).thenReturn(profile);
+        when(keycloakAdminClient.updateUserEnabled(KEYCLOAK_SUBJECT, false)).thenReturn(true);
 
         UserProfileResponse response = service.updateEnabledStatus(USER_ID, false);
 
@@ -65,6 +66,7 @@ class AdminUserStatusServiceTest {
         profile.updateEnabled(false);
         when(userProfileRepository.findById(USER_ID)).thenReturn(Optional.of(profile));
         when(userProfileRepository.saveAndFlush(profile)).thenReturn(profile);
+        when(keycloakAdminClient.updateUserEnabled(KEYCLOAK_SUBJECT, true)).thenReturn(false);
 
         UserProfileResponse response = service.updateEnabledStatus(USER_ID, true);
 
@@ -100,6 +102,7 @@ class AdminUserStatusServiceTest {
         UserProfile profile = new UserProfile(
                 KEYCLOAK_SUBJECT, "Test Person", "person@example.com", "+919876543210");
         when(userProfileRepository.findById(USER_ID)).thenReturn(Optional.of(profile));
+        when(keycloakAdminClient.updateUserEnabled(KEYCLOAK_SUBJECT, false)).thenReturn(true);
         when(userProfileRepository.saveAndFlush(profile))
                 .thenThrow(new DataIntegrityViolationException("database unavailable"));
 
@@ -115,6 +118,7 @@ class AdminUserStatusServiceTest {
         UserProfile profile = new UserProfile(
                 KEYCLOAK_SUBJECT, "Test Person", "person@example.com", "+919876543210");
         when(userProfileRepository.findById(USER_ID)).thenReturn(Optional.of(profile));
+        when(keycloakAdminClient.updateUserEnabled(KEYCLOAK_SUBJECT, false)).thenReturn(true);
         when(userProfileRepository.saveAndFlush(profile))
                 .thenThrow(new DataIntegrityViolationException("database unavailable"));
         doThrow(new IllegalStateException("Keycloak unavailable"))
