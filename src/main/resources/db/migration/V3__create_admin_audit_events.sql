@@ -12,6 +12,7 @@ CREATE TABLE admin_audit_events (
     ),
     CONSTRAINT ck_admin_audit_event_details CHECK (
         (action = 'USER_PROVISIONED'
+            AND assigned_role IS NOT NULL
             AND assigned_role IN ('STAFF', 'ADMIN')
             AND previous_enabled IS NULL
             AND new_enabled IS NULL)
