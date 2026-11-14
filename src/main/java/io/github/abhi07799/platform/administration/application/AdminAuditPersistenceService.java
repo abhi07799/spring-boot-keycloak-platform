@@ -37,13 +37,15 @@ public class AdminAuditPersistenceService {
                 .orElseThrow(AdminUserNotFoundException::new);
         profile.updateEnabled(newEnabled);
         UserProfile saved = userProfileRepository.saveAndFlush(profile);
-        auditEventRepository.saveAndFlush(new AdminAuditEvent(
+        if (previousEnabled != newEnabled) {
+            auditEventRepository.saveAndFlush(new AdminAuditEvent(
                     actorSubjectId,
                     newEnabled ? "USER_ENABLED" : "USER_DISABLED",
                     saved.getId(),
                     null,
                     previousEnabled,
                     newEnabled));
+        }
         return saved;
     }
 }
