@@ -74,7 +74,7 @@ See [Keycloak configuration](docs/keycloak/README.md), [security setup](docs/sec
 - `main`: stable baseline.
 - `develop`: integration branch.
 - `step1/initial-project-setup`: initial repository baseline.
-- Later milestones use numbered prefixes such as `step2.1/`, `step2.2/`, `step2.3/`, `step2.4/`, `step3.1/`, `step3.2/`, `step3.3/`, `step3.4/`, `step3.5/`, `step3.6/`, `step3.7/`, and `step3.8/`.
+- Later milestones use numbered prefixes such as `step2.1/`, `step2.2/`, `step2.3/`, `step2.4/`, `step3.1/`, `step3.2/`, `step3.3/`, `step3.4/`, `step3.5/`, `step3.6/`, `step3.7/`, `step3.8/`, and `step3.9/`.
 
 ## Learning journal
 See [LEARNING.md](LEARNING.md).
