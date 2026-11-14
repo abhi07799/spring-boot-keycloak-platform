@@ -90,7 +90,7 @@ class AdminUserStatusServiceTest {
                 .when(keycloakAdminClient).updateUserEnabled(KEYCLOAK_SUBJECT, false);
 
         assertThatThrownBy(() -> service.updateEnabledStatus(USER_ID, false))
-                .isInstanceOf(AdminUserStatusUpdateException.class);
+                .isInstanceOf(KeycloakAccountStatusUpdateException.class);
         assertThat(profile.isEnabled()).isTrue();
         verify(userProfileRepository, never()).saveAndFlush(profile);
     }
