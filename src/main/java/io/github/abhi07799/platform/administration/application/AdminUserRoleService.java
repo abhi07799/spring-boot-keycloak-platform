@@ -20,17 +20,26 @@ public class AdminUserRoleService {
     private final UserProfileRepository userProfileRepository;
     private final KeycloakAdminClient keycloakAdminClient;
     private final AdminAuditPersistenceService auditPersistenceService;
+    private final AdminRoleChangeLockService roleChangeLockService;
 
     public AdminUserRoleService(
             UserProfileRepository userProfileRepository,
             KeycloakAdminClient keycloakAdminClient,
-            AdminAuditPersistenceService auditPersistenceService) {
+            AdminAuditPersistenceService auditPersistenceService,
+            AdminRoleChangeLockService roleChangeLockService) {
         this.userProfileRepository = userProfileRepository;
         this.keycloakAdminClient = keycloakAdminClient;
         this.auditPersistenceService = auditPersistenceService;
+        this.roleChangeLockService = roleChangeLockService;
     }
 
     public AdminUserRoleResponse updateRole(
+            UUID userId, UpdateAdminUserRoleRequest.Role requestedRole, String actorSubjectId) {
+        return roleChangeLockService.withRoleChangeLock(
+                () -> updateRoleWhileLocked(userId, requestedRole, actorSubjectId));
+    }
+
+    private AdminUserRoleResponse updateRoleWhileLocked(
             UUID userId, UpdateAdminUserRoleRequest.Role requestedRole, String actorSubjectId) {
         UserProfile profile = userProfileRepository.findById(userId)
                 .orElseThrow(AdminUserNotFoundException::new);
