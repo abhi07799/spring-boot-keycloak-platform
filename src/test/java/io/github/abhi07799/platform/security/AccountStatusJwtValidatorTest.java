@@ -74,6 +74,26 @@ class AccountStatusJwtValidatorTest {
         assertThat(result.getErrors().iterator().next().getErrorCode()).isEqualTo("invalid_token");
     }
 
+
+    @Test
+    void rechecksAccountStatusOnEveryTokenValidation() {
+        UserProfile enabledProfile = new UserProfile(
+                SUBJECT, "Test Person", "person@example.com", "+919876543210");
+        UserProfile disabledProfile = new UserProfile(
+                SUBJECT, "Test Person", "person@example.com", "+919876543210");
+        disabledProfile.updateEnabled(false);
+        when(userProfileRepository.findByKeycloakSubjectId(SUBJECT))
+                .thenReturn(Optional.of(enabledProfile), Optional.of(disabledProfile));
+
+        OAuth2TokenValidatorResult firstRequest = validator.validate(jwt(SUBJECT));
+        OAuth2TokenValidatorResult secondRequest = validator.validate(jwt(SUBJECT));
+
+        assertThat(firstRequest.getErrors()).isEmpty();
+        assertThat(secondRequest.getErrors()).hasSize(1);
+        verify(userProfileRepository, org.mockito.Mockito.times(2))
+                .findByKeycloakSubjectId(SUBJECT);
+    }
+
     private Jwt jwt(String subject) {
         return Jwt.withTokenValue("test-token")
                 .header("alg", "RS256")
