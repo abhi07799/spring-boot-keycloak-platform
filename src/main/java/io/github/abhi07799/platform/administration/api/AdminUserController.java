@@ -3,6 +3,7 @@ package io.github.abhi07799.platform.administration.api;
 import io.github.abhi07799.platform.administration.application.AdminUserDirectoryService;
 import io.github.abhi07799.platform.administration.application.AdminUserProvisioningService;
 import io.github.abhi07799.platform.administration.application.AdminUserStatusService;
+import io.github.abhi07799.platform.identity.api.RegistrationResponse;
 import io.github.abhi07799.platform.user.api.UserProfileResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
