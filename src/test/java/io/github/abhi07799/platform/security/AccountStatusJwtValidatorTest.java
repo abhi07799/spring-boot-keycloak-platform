@@ -106,7 +106,7 @@ class AccountStatusJwtValidatorTest {
     }
 
     private Jwt jwt(String subject) {
-        Jwt.Builder builder = Jwt.withTokenValue("test-token")
+        var builder = Jwt.withTokenValue("test-token")
                 .header("alg", "RS256")
                 .claim("iss", "http://localhost:8081/realms/platform");
         if (subject != null) {
