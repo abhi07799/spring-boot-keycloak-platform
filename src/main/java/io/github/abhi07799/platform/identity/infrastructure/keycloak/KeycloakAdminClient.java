@@ -52,11 +52,22 @@ public class KeycloakAdminClient {
     }
 
     public void updateUserEnabled(String userId, boolean enabled) {
+        Map<String, Object> user = restClient.get()
+                .uri("/admin/realms/{realm}/users/{userId}", realm, userId)
+                .header(HttpHeaders.AUTHORIZATION, bearerToken())
+                .retrieve()
+                .body(new ParameterizedTypeReference<>() { });
+
+        if (user == null || user.isEmpty()) {
+            throw new IllegalStateException("Keycloak user representation was not found: " + userId);
+        }
+
+        user.put("enabled", enabled);
         restClient.put()
                 .uri("/admin/realms/{realm}/users/{userId}", realm, userId)
                 .header(HttpHeaders.AUTHORIZATION, bearerToken())
                 .contentType(MediaType.APPLICATION_JSON)
-                .body(Map.of("enabled", enabled))
+                .body(user)
                 .retrieve()
                 .toBodilessEntity();
     }
