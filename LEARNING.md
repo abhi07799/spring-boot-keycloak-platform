@@ -378,10 +378,10 @@ Public registration must never grant privileged access. The administrative provi
 
 **Files changed**
 - `src/main/java/io/github/abhi07799/platform/administration/api/AdminUserProvisioningRequest.java`
-- `src/main/java/io/github/abhi07799/platform/administration/api/AdminUserProvisioningController.java`
+- `src/main/java/io/github/abhi07799/platform/administration/api/AdminUserController.java`
 - `src/main/java/io/github/abhi07799/platform/administration/application/AdminUserProvisioningService.java`
 - `src/main/java/io/github/abhi07799/platform/security/config/SecurityConfig.java`
-- `src/test/java/io/github/abhi07799/platform/administration/api/AdminUserProvisioningControllerTest.java`
+- `src/test/java/io/github/abhi07799/platform/administration/api/AdminUserControllerTest.java`
 - `src/test/java/io/github/abhi07799/platform/administration/application/AdminUserProvisioningServiceTest.java`
 - `README.md`
 - `docs/security/README.md`
@@ -449,10 +449,10 @@ Administrators need a bounded way to inspect application accounts after registra
 - **DTO projection at the API boundary:** the endpoint reuses the public-safe profile response instead of serializing persistence entities.
 
 **Files changed**
-- `src/main/java/io/github/abhi07799/platform/administration/api/AdminUserProvisioningController.java`
+- `src/main/java/io/github/abhi07799/platform/administration/api/AdminUserController.java`
 - `src/main/java/io/github/abhi07799/platform/administration/api/AdminUserDirectoryResponse.java`
 - `src/main/java/io/github/abhi07799/platform/administration/application/AdminUserDirectoryService.java`
-- `src/test/java/io/github/abhi07799/platform/administration/api/AdminUserProvisioningControllerTest.java`
+- `src/test/java/io/github/abhi07799/platform/administration/api/AdminUserControllerTest.java`
 - `src/test/java/io/github/abhi07799/platform/administration/application/AdminUserDirectoryServiceTest.java`
 - `README.md`
 - `docs/security/README.md`
@@ -490,11 +490,16 @@ Keycloak remains the identity provider and controls whether the account can auth
 - `src/main/java/io/github/abhi07799/platform/user/api/UserProfileResponse.java`
 - `src/main/java/io/github/abhi07799/platform/identity/infrastructure/keycloak/KeycloakAdminClient.java`
 - `src/main/java/io/github/abhi07799/platform/administration/api/UpdateUserAccountStatusRequest.java`
-- `src/main/java/io/github/abhi07799/platform/administration/api/AdminUserProvisioningController.java`
+- `src/main/java/io/github/abhi07799/platform/administration/api/AdminUserController.java`
+- `src/main/java/io/github/abhi07799/platform/administration/api/UpdateUserAccountStatusRequest.java`
 - `src/main/java/io/github/abhi07799/platform/administration/api/AdminUserExceptionHandler.java`
+- `src/main/java/io/github/abhi07799/platform/administration/application/AdminUserNotFoundException.java`
+- `src/main/java/io/github/abhi07799/platform/administration/application/AdminUserStatusUpdateException.java`
+- `src/main/java/io/github/abhi07799/platform/administration/application/KeycloakAccountStatusUpdateException.java`
+- `src/main/java/io/github/abhi07799/platform/administration/application/AdminUserStatusCompensationException.java`
 - `src/main/java/io/github/abhi07799/platform/administration/application/AdminUserStatusService.java`
 - `src/test/java/io/github/abhi07799/platform/identity/infrastructure/keycloak/KeycloakAdminClientTest.java`
-- `src/test/java/io/github/abhi07799/platform/administration/api/AdminUserProvisioningControllerTest.java`
+- `src/test/java/io/github/abhi07799/platform/administration/api/AdminUserControllerTest.java`
 - `src/test/java/io/github/abhi07799/platform/administration/application/AdminUserStatusServiceTest.java`
 - `README.md`
 - `docs/security/README.md`
