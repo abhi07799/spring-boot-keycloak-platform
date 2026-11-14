@@ -489,7 +489,6 @@ Keycloak remains the identity provider and controls whether the account can auth
 - `src/main/java/io/github/abhi07799/platform/user/infrastructure/persistence/UserProfile.java`
 - `src/main/java/io/github/abhi07799/platform/user/api/UserProfileResponse.java`
 - `src/main/java/io/github/abhi07799/platform/identity/infrastructure/keycloak/KeycloakAdminClient.java`
-- `src/main/java/io/github/abhi07799/platform/administration/api/UpdateUserAccountStatusRequest.java`
 - `src/main/java/io/github/abhi07799/platform/administration/api/AdminUserController.java`
 - `src/main/java/io/github/abhi07799/platform/administration/api/UpdateUserAccountStatusRequest.java`
 - `src/main/java/io/github/abhi07799/platform/administration/api/AdminUserExceptionHandler.java`
