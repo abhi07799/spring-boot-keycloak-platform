@@ -3,6 +3,7 @@ package io.github.abhi07799.platform.administration.api;
 import io.github.abhi07799.platform.administration.application.AdminUserDirectoryService;
 import io.github.abhi07799.platform.administration.application.AdminUserProvisioningService;
 import io.github.abhi07799.platform.administration.application.AdminUserStatusService;
+import io.github.abhi07799.platform.administration.application.AdminUserRoleService;
 import io.github.abhi07799.platform.user.api.UserProfileResponse;
 import io.github.abhi07799.platform.identity.api.RegistrationExceptionHandler;
 import io.github.abhi07799.platform.security.KeycloakRoleConverter;
@@ -55,6 +56,9 @@ class AdminUserControllerTest {
 
     @Autowired
     private AdminUserStatusService statusService;
+
+    @Autowired
+    private AdminUserRoleService roleService;
 
     @Test
     void rejectsUnauthenticatedRequests() throws Exception {
@@ -227,6 +231,12 @@ class AdminUserControllerTest {
         @Primary
         AdminUserStatusService statusService() {
             return mock(AdminUserStatusService.class);
+        }
+
+        @Bean
+        @Primary
+        AdminUserRoleService roleService() {
+            return mock(AdminUserRoleService.class);
         }
 
         @Bean
