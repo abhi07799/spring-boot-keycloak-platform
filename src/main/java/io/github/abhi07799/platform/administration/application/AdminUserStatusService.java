@@ -35,7 +35,7 @@ public class AdminUserStatusService {
         try {
             keycloakAdminClient.updateUserEnabled(profile.getKeycloakSubjectId(), enabled);
         } catch (RuntimeException exception) {
-            throw new AdminUserStatusUpdateException(exception);
+            throw new KeycloakAccountStatusUpdateException(exception);
         }
 
         try {
