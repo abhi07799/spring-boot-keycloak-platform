@@ -8,6 +8,7 @@ import io.github.abhi07799.platform.identity.api.RegistrationExceptionHandler;
 import io.github.abhi07799.platform.security.KeycloakRoleConverter;
 import io.github.abhi07799.platform.security.config.SecurityConfig;
 import io.github.abhi07799.platform.user.infrastructure.persistence.UserProfile;
+import io.github.abhi07799.platform.user.infrastructure.persistence.UserProfileRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.TestConfiguration;
@@ -222,6 +223,12 @@ class AdminUserControllerTest {
         @Primary
         AdminUserStatusService statusService() {
             return mock(AdminUserStatusService.class);
+        }
+
+        @Bean
+        @Primary
+        UserProfileRepository userProfileRepository() {
+            return mock(UserProfileRepository.class);
         }
 
         @Bean

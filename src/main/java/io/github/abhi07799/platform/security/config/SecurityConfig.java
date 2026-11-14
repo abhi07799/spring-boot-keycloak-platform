@@ -1,12 +1,13 @@
 package io.github.abhi07799.platform.security.config;
 
+import io.github.abhi07799.platform.security.AccountStatusJwtValidator;
 import io.github.abhi07799.platform.security.KeycloakRoleConverter;
+import io.github.abhi07799.platform.user.infrastructure.persistence.UserProfileRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.oauth2.core.DelegatingOAuth2TokenValidator;
 import org.springframework.security.oauth2.core.OAuth2Error;
 import org.springframework.security.oauth2.core.OAuth2TokenValidator;
 import org.springframework.security.oauth2.core.OAuth2TokenValidatorResult;
@@ -50,18 +51,34 @@ public class SecurityConfig {
     }
 
     @Bean
-    JwtDecoder jwtDecoder(@Value("${spring.security.oauth2.resourceserver.jwt.issuer-uri}") String issuerUri) {
+    JwtDecoder jwtDecoder(
+            @Value("${spring.security.oauth2.resourceserver.jwt.issuer-uri}") String issuerUri,
+            UserProfileRepository userProfileRepository) {
         String normalizedIssuer = issuerUri.replaceAll("/+$", "");
         String jwkSetUri = normalizedIssuer + "/protocol/openid-connect/certs";
 
         NimbusJwtDecoder decoder = NimbusJwtDecoder.withJwkSetUri(jwkSetUri).build();
-        OAuth2TokenValidator<Jwt> issuerValidator = JwtValidators.createDefaultWithIssuer(normalizedIssuer);
+        OAuth2TokenValidator<Jwt> standardValidator = JwtValidators.createDefaultWithIssuer(normalizedIssuer);
         OAuth2TokenValidator<Jwt> audienceValidator = jwt -> jwt.getAudience().contains(API_AUDIENCE)
                 ? OAuth2TokenValidatorResult.success()
                 : OAuth2TokenValidatorResult.failure(
                         new OAuth2Error("invalid_token", "Required audience platform-api is missing", null));
+        OAuth2TokenValidator<Jwt> accountStatusValidator = new AccountStatusJwtValidator(userProfileRepository);
 
-        decoder.setJwtValidator(new DelegatingOAuth2TokenValidator<>(issuerValidator, audienceValidator));
+        OAuth2TokenValidator<Jwt> platformTokenValidator = jwt -> {
+            OAuth2TokenValidatorResult standardResult = standardValidator.validate(jwt);
+            if (!standardResult.getErrors().isEmpty()) {
+                return standardResult;
+            }
+
+            OAuth2TokenValidatorResult audienceResult = audienceValidator.validate(jwt);
+            if (!audienceResult.getErrors().isEmpty()) {
+                return audienceResult;
+            }
+
+            return accountStatusValidator.validate(jwt);
+        };
+        decoder.setJwtValidator(platformTokenValidator);
         return decoder;
     }
 
