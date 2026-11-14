@@ -2,7 +2,7 @@
 
 ## Imported realm
 
-The repository provisions a realm named `platform` from `infra/keycloak/realm/platform-realm.json`. Keycloak imports it at startup only when a realm with that name does not already exist.
+The repository provisions a realm named `platform` from `infra/keycloak/realm/platform-realm.json`. Keycloak imports it at startup only when a realm with that name does not already exist. The realm enables `verifyEmail` and `resetPasswordAllowed`; SMTP is deliberately not embedded in the tracked realm export.
 
 Direct Keycloak self-registration is disabled. The platform's public registration flow will be implemented by the backend and will assign only the `USER` client role.
 
@@ -57,7 +57,7 @@ Keycloak 26.8.2 applies additional restrictions to protocol-mapper administratio
 The backend uses the platform-admin-service confidential client with the OAuth 2.0 Client Credentials grant. The client belongs to the platform realm, has service accounts enabled, and authenticates with HTTP Basic client authentication. The backend obtains a service-account access token from the realm token endpoint and calls the Admin REST API with that bearer token.
 
 For the current backend operations, grant the service account only the realm-management client roles required to:
-- Create users (manage-users).
+- Create users and send verification/password-update action emails (`manage-users`).
 - Read and update user account status (view-users, manage-users).
 - Query users if/when the registration workflow needs lookup (query-users, view-users).
 - Resolve the platform-api client and its roles (query-clients, view-clients).
@@ -65,7 +65,7 @@ For the current backend operations, grant the service account only the realm-man
 
 Keycloak's authorization model can vary with fine-grained admin permissions and realm configuration. Verify each operation in the local Keycloak 26.8.2 instance; do not grant realm-admin as a shortcut. Role-mapping operations may require an additional narrowly scoped permission depending on the Keycloak admin-permission configuration.
 
-The public backend registration endpoint is `POST /api/v1/auth/register`. It accepts full name, email, mobile number, and password; creates the identity through the Admin REST API; assigns only the `USER` client role under `platform-api`; and persists the profile in the application database. Passwords are sent directly to Keycloak and are never stored in the application database or returned by the API.
+The public backend registration endpoint is `POST /api/v1/auth/register`. It accepts full name, email, mobile number, and password; creates the identity through the Admin REST API with `emailVerified=false`; assigns only the `USER` client role under `platform-api`; and persists the profile in the application database. After persistence, it asks Keycloak to send its built-in verification action email. Email delivery failure does not roll back the account; the user can request another verification message. Passwords are sent directly to Keycloak and are never stored in the application database or returned by the API.
 
 The privileged endpoint `POST /api/v1/admin/users` requires an access token containing `ROLE_ADMIN`. It accepts the same profile and password fields plus a `role` value restricted to `STAFF` or `ADMIN`. The backend creates the Keycloak identity, assigns exactly the requested `platform-api` client role, and persists the application profile. A caller cannot request `USER` through this administrative endpoint; standard accounts use public registration. Role authorization is enforced by Spring Security before the controller is invoked.
 
@@ -113,7 +113,20 @@ The API does not accept refresh tokens and does not proxy refresh grants. An OAu
 
 The admin account-status endpoint `PATCH /api/v1/admin/users/{userId}/status` uses the Keycloak Admin API to enable or disable an identity and mirrors the result in the application profile table. The client first reads the full Keycloak user representation and then updates its `enabled` field, preserving other user attributes. The service updates Keycloak first and persists the application status second; if persistence fails, it attempts a compensating Keycloak update to the previous status. A failed compensation requires operational reconciliation. The resource server also checks the mirrored application profile status on every bearer-token authentication, so the next protected API request rejects an already-issued token after the account-status transaction commits.
 
-The current imported realm has `verifyEmail: false`. Email verification is therefore not enforced in this learning environment. Before production, configure SMTP and enable Keycloak email verification; retain `emailVerified=false` for newly registered accounts.
+The realm export now has `verifyEmail: true` and `resetPasswordAllowed: true`. New registrations remain `emailVerified=false`; Keycloak blocks normal login until the email action link is completed. Password reset uses Keycloak's built-in `UPDATE_PASSWORD` required action, so the application never receives or stores a new password.
+
+### Configure Keycloak SMTP
+
+SMTP credentials must be configured in the Keycloak Admin Console and must never be committed to this repository:
+
+1. Start the Keycloak service and open the `platform` realm.
+2. Open **Realm settings → Email**.
+3. Configure the SMTP host, port, sender address, authentication, and TLS/SSL settings supplied by your email provider.
+4. Store the SMTP username/password only in the Keycloak server's protected configuration/secret store. Do not paste them into the realm JSON or commit them.
+5. Use **Test connection** / **Test authentication** where available, then save.
+6. Register a test account and verify that the message arrives, the action link works, and the account can log in after verification.
+
+For a realm imported before this change, startup import will not update it. Manually enable **Verify email** and **Reset password** in **Realm settings → Login**, then configure SMTP as above. The backend action-token lifetime defaults to 900 seconds (15 minutes) and can be changed with `KEYCLOAK_ACTION_TOKEN_LIFESPAN_SECONDS`.
 
 ### Local backend environment
 
@@ -135,7 +148,7 @@ $env:KEYCLOAK_ADMIN_REALM = "platform"
 
 When the backend itself runs inside the Compose network, set KEYCLOAK_ADMIN_BASE_URL=http://keycloak:8080. The issuer/token URL must also be reachable from the backend and must match the realm issuer used by the Keycloak instance.
 
-Never log the client secret or access token, and never send them to Swagger UI or a browser.
+Never log the client secret or access token, and never send them to Swagger UI or a browser. Put edge-level rate limits and abuse monitoring on the public password-reset and verification-resend endpoints before production; generic responses reduce account enumeration but do not replace rate limiting or mail-provider abuse controls.
 
 ## Security notes
 
