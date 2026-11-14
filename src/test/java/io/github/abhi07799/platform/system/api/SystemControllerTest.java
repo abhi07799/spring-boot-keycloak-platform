@@ -1,5 +1,6 @@
 package io.github.abhi07799.platform.system.api;
 
+import io.github.abhi07799.platform.security.KeycloakRoleConverter;
 import io.github.abhi07799.platform.security.config.SecurityConfig;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,7 +18,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(SystemController.class)
-@Import({SecurityConfig.class, SystemControllerTest.TestJwtDecoderConfiguration.class})
+@Import({SecurityConfig.class, KeycloakRoleConverter.class, SystemControllerTest.TestJwtDecoderConfiguration.class})
 class SystemControllerTest {
 
     @Autowired
