@@ -27,7 +27,7 @@ Public:
 - `/actuator/health` and its subpaths
 - Swagger UI and OpenAPI document endpoints
 
-All other requests require a valid bearer access token. In particular, `GET /api/v1/users/me` is authenticated and resolves the application profile using the validated JWT `sub` claim; callers cannot provide another user's identifier. A subject without a corresponding application profile receives HTTP 404. The response excludes the Keycloak subject identifier and all credential data. The API is stateless; HTTP Basic, form login, and CSRF are disabled for this bearer-token-only API configuration. Role-specific endpoint authorization will be added alongside the corresponding business APIs.
+All other requests require a valid bearer access token. `GET /api/v1/users/me` resolves the application profile using the validated JWT `sub` claim; callers cannot provide another user's identifier. A subject without a corresponding profile receives HTTP 404. The response excludes the Keycloak subject identifier and credential data. `POST /api/v1/admin/users` additionally requires `ROLE_ADMIN`; authenticated `USER` and `STAFF` principals receive HTTP 403. The endpoint accepts only `STAFF` or `ADMIN` as the requested role. Public registration remains restricted to `USER`. The API is stateless; HTTP Basic, form login, and CSRF are disabled for this bearer-token-only API configuration.
 
 ## Swagger OAuth2 login
 
@@ -52,7 +52,7 @@ Required environment variables:
 - KEYCLOAK_ADMIN_REALM: defaults to platform.
 - KEYCLOAK_ADMIN_TOKEN_URI: optional token endpoint override; defaults to the local platform realm token endpoint.
 
-The Admin API client supports creating, deleting, and assigning a client role to Keycloak users. Public registration is implemented at `POST /api/v1/auth/register`; callers cannot select a role. The workflow always assigns only `platform-api/USER` and then persists the profile in the application database. If a later step fails, the service attempts to delete the Keycloak user as compensation.
+The Admin API client supports creating, deleting, and assigning a client role to Keycloak users. Public registration is implemented at `POST /api/v1/auth/register`; callers cannot select a role. The workflow always assigns only `platform-api/USER` and then persists the profile in the application database. `POST /api/v1/admin/users` is separately restricted to `ROLE_ADMIN` and accepts only `STAFF` or `ADMIN`; it provisions the requested role and persists the profile. Both workflows attempt to delete the newly created Keycloak identity if role assignment or profile persistence fails.
 
 The registration payload is validated (email, full name, mobile number, and a password of 12–128 characters). Duplicate email is returned as HTTP 409, invalid input as HTTP 400, and registration failures as a generic HTTP 500 response. The password is never persisted in the application database or returned in the response.
 
