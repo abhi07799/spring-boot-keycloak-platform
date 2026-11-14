@@ -29,7 +29,9 @@ class AdminUserDirectoryServiceTest {
 
     @Test
     void returnsRequestedPageSortedByNewestProfileFirst() {
-        PageRequest pageable = PageRequest.of(1, 10, Sort.by(Sort.Direction.DESC, "createdAt").and(Sort.by(Sort.Direction.DESC, "id")));
+        Sort sort = Sort.by(Sort.Direction.DESC, "createdAt")
+                .and(Sort.by(Sort.Direction.DESC, "id"));
+        PageRequest pageable = PageRequest.of(1, 10, sort);
         UserProfile profile = new UserProfile(
                 "subject-1", "Test Person", "person@example.com", "+919876543210");
         when(userProfileRepository.findAll(pageable))
