@@ -2,6 +2,7 @@ package io.github.abhi07799.platform.system.api;
 
 import io.github.abhi07799.platform.security.KeycloakRoleConverter;
 import io.github.abhi07799.platform.security.config.SecurityConfig;
+import io.github.abhi07799.platform.user.infrastructure.persistence.UserProfileRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.TestConfiguration;
@@ -39,6 +40,12 @@ class SystemControllerTest {
 
     @TestConfiguration
     static class TestJwtDecoderConfiguration {
+
+        @Bean
+        @Primary
+        UserProfileRepository userProfileRepository() {
+            return mock(UserProfileRepository.class);
+        }
 
         @Bean
         @Primary
