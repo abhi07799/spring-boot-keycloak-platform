@@ -174,7 +174,8 @@ class AdminUserControllerTest {
         when(provisioningService.provision(any(), eq("admin-subject"))).thenReturn(null);
 
         mockMvc.perform(post("/api/v1/admin/users")
-                        .with(jwt().authorities(new SimpleGrantedAuthority("ROLE_ADMIN")))
+                        .with(jwt().jwt(token -> token.subject("admin-subject"))
+                                .authorities(new SimpleGrantedAuthority("ROLE_ADMIN")))
                         .contentType("application/json")
                         .content("""
                                 {
