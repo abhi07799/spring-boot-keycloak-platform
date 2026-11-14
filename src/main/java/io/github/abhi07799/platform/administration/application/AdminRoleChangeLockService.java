@@ -57,6 +57,9 @@ public class AdminRoleChangeLockService {
         try (PreparedStatement statement = connection.prepareStatement("SELECT pg_advisory_lock(?)")) {
             statement.setLong(1, ADVISORY_LOCK_KEY);
             statement.execute();
+        } catch (SQLException exception) {
+            abortConnection(connection);
+            throw exception;
         }
     }
 
@@ -69,8 +72,17 @@ public class AdminRoleChangeLockService {
                 }
             }
         } catch (SQLException exception) {
-            log.error("Could not explicitly release the PostgreSQL role-change advisory lock; closing the connection will release it.",
+            log.error("Could not explicitly release the PostgreSQL role-change advisory lock; aborting the pooled connection.",
                     exception);
+            abortConnection(connection);
+        }
+    }
+
+    private void abortConnection(Connection connection) {
+        try {
+            connection.abort(Runnable::run);
+        } catch (SQLException abortFailure) {
+            log.error("Could not abort the PostgreSQL advisory-lock connection.", abortFailure);
         }
     }
 }
