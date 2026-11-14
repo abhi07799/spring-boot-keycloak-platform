@@ -11,6 +11,7 @@ import org.springframework.web.client.RestClient;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.content;
@@ -108,6 +109,59 @@ class KeycloakAdminClientTest {
                 .andRespond(withStatus(HttpStatus.NO_CONTENT));
 
         assertThat(client.updateUserEnabled("user-123", false)).isTrue();
+        server.verify();
+    }
+
+    @Test
+    void replacesExistingPlatformRoleWithoutTouchingOtherRoleMappings() {
+        server.expect(requestTo("http://localhost:8081/admin/realms/platform/clients?clientId=platform-api"))
+                .andExpect(method(HttpMethod.GET))
+                .andRespond(withSuccess("[{\"id\":\"client-uuid\"}]", MediaType.APPLICATION_JSON));
+
+        server.expect(requestTo("http://localhost:8081/admin/realms/platform/users/user-123/role-mappings/clients/client-uuid"))
+                .andExpect(method(HttpMethod.GET))
+                .andRespond(withSuccess("""
+                        [{"id":"user-role","name":"USER","composite":false,"clientRole":true,"containerId":"client-uuid"}]
+                        """, MediaType.APPLICATION_JSON));
+
+        server.expect(requestTo("http://localhost:8081/admin/realms/platform/clients/client-uuid/roles/STAFF"))
+                .andExpect(method(HttpMethod.GET))
+                .andRespond(withSuccess(
+                        "{\"id\":\"staff-role\",\"name\":\"STAFF\",\"composite\":false,\"clientRole\":true,\"containerId\":\"client-uuid\"}",
+                        MediaType.APPLICATION_JSON));
+
+        server.expect(requestTo("http://localhost:8081/admin/realms/platform/users/user-123/role-mappings/clients/client-uuid"))
+                .andExpect(method(HttpMethod.POST))
+                .andExpect(content().json("[{\"id\":\"staff-role\",\"name\":\"STAFF\",\"composite\":false,\"clientRole\":true,\"containerId\":\"client-uuid\"}]"))
+                .andRespond(withStatus(HttpStatus.NO_CONTENT));
+
+        server.expect(requestTo("http://localhost:8081/admin/realms/platform/users/user-123/role-mappings/clients/client-uuid"))
+                .andExpect(method(HttpMethod.DELETE))
+                .andExpect(content().json("[{\"id\":\"user-role\",\"name\":\"USER\",\"composite\":false,\"clientRole\":true,\"containerId\":\"client-uuid\"}]"))
+                .andRespond(withStatus(HttpStatus.NO_CONTENT));
+
+        assertThat(client.updateClientRole("user-123", "platform-api", "STAFF")).isEqualTo("USER");
+        server.verify();
+    }
+
+    @Test
+    void preventsDemotingTheLastEnabledAdministrator() {
+        server.expect(requestTo("http://localhost:8081/admin/realms/platform/clients?clientId=platform-api"))
+                .andExpect(method(HttpMethod.GET))
+                .andRespond(withSuccess("[{\"id\":\"client-uuid\"}]", MediaType.APPLICATION_JSON));
+
+        server.expect(requestTo("http://localhost:8081/admin/realms/platform/users/user-123/role-mappings/clients/client-uuid"))
+                .andExpect(method(HttpMethod.GET))
+                .andRespond(withSuccess("""
+                        [{"id":"admin-role","name":"ADMIN","composite":false,"clientRole":true,"containerId":"client-uuid"}]
+                        """, MediaType.APPLICATION_JSON));
+
+        server.expect(requestTo("http://localhost:8081/admin/realms/platform/clients/client-uuid/roles/ADMIN/users?first=0&max=100"))
+                .andExpect(method(HttpMethod.GET))
+                .andRespond(withSuccess("[{\"id\":\"user-123\",\"enabled\":true}]", MediaType.APPLICATION_JSON));
+
+        assertThatThrownBy(() -> client.updateClientRole("user-123", "platform-api", "STAFF"))
+                .isInstanceOf(KeycloakLastAdminException.class);
         server.verify();
     }
 
