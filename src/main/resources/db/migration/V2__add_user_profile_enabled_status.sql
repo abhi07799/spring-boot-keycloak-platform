@@ -1,0 +1,2 @@
+ALTER TABLE user_profiles
+    ADD COLUMN enabled BOOLEAN NOT NULL DEFAULT TRUE;

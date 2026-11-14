@@ -41,6 +41,7 @@ The backend uses KEYCLOAK_ADMIN_BASE_URL=http://localhost:8081 and realm platfor
 - Current user profile: `GET http://localhost:8080/api/v1/users/me` (authenticated; resolves the profile from the JWT subject).
 - Update current user profile: `PUT http://localhost:8080/api/v1/users/me` (authenticated; updates full name and mobile number only).
 - Admin user directory: `GET http://localhost:8080/api/v1/admin/users` (ADMIN only; paginated, default 20 users, maximum 100 per page).
+- Admin account status: `PATCH http://localhost:8080/api/v1/admin/users/{userId}/status` (ADMIN only; body `{"enabled":false}` disables, `{"enabled":true}` re-enables).
 - Admin provisioning: `POST http://localhost:8080/api/v1/admin/users` (ADMIN only; creates `STAFF` or `ADMIN`).
 - Ping endpoint: http://localhost:8080/api/v1/ping (public)
 - Swagger UI: http://localhost:8080/swagger-ui.html (Keycloak OAuth2 + PKCE)
@@ -73,7 +74,7 @@ See [Keycloak configuration](docs/keycloak/README.md), [security setup](docs/sec
 - `main`: stable baseline.
 - `develop`: integration branch.
 - `step1/initial-project-setup`: initial repository baseline.
-- Later milestones use numbered prefixes such as `step2.1/`, `step2.2/`, `step2.3/`, `step2.4/`, `step3.1/`, `step3.2/`, `step3.3/`, `step3.4/`, `step3.5/`, `step3.6/`, `step3.7/`, and `step3.8/`.
+- Later milestones use numbered prefixes such as `step2.1/`, `step2.2/`, `step2.3/`, `step2.4/`, `step3.1/`, `step3.2/`, `step3.3/`, `step3.4/`, `step3.5/`, `step3.6/`, `step3.7/`, `step3.8/`, and `step3.9/`.
 
 ## Learning journal
 See [LEARNING.md](LEARNING.md).

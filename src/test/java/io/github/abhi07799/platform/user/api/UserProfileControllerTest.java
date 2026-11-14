@@ -55,6 +55,7 @@ class UserProfileControllerTest {
                 .andExpect(jsonPath("$.fullName").value("Test Person"))
                 .andExpect(jsonPath("$.email").value("person@example.com"))
                 .andExpect(jsonPath("$.mobileNumber").value("+919876543210"))
+                .andExpect(jsonPath("$.enabled").value(true))
                 .andExpect(jsonPath("$.keycloakSubjectId").doesNotExist())
                 .andExpect(jsonPath("$.password").doesNotExist());
     }
@@ -88,6 +89,7 @@ class UserProfileControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.fullName").value("Updated Person"))
                 .andExpect(jsonPath("$.mobileNumber").value("+919999999999"))
+                .andExpect(jsonPath("$.enabled").value(true))
                 .andExpect(jsonPath("$.email").value("person@example.com"))
                 .andExpect(jsonPath("$.keycloakSubjectId").doesNotExist())
                 .andExpect(jsonPath("$.password").doesNotExist());

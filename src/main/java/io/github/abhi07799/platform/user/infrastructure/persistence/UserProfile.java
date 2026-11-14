@@ -32,6 +32,9 @@ public class UserProfile {
     @Column(name = "mobile_number", nullable = false, length = 20)
     private String mobileNumber;
 
+    @Column(name = "enabled", nullable = false)
+    private boolean enabled = true;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
@@ -51,6 +54,10 @@ public class UserProfile {
     public void updateProfileDetails(String fullName, String mobileNumber) {
         this.fullName = fullName;
         this.mobileNumber = mobileNumber;
+    }
+
+    public void updateEnabled(boolean enabled) {
+        this.enabled = enabled;
     }
 
     @PrePersist
@@ -83,6 +90,10 @@ public class UserProfile {
 
     public String getMobileNumber() {
         return mobileNumber;
+    }
+
+    public boolean isEnabled() {
+        return enabled;
     }
 
     public Instant getCreatedAt() {

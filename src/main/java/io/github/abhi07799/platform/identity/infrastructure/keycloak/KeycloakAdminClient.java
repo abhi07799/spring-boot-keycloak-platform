@@ -2,6 +2,7 @@ package io.github.abhi07799.platform.identity.infrastructure.keycloak;
 
 import java.net.URI;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
@@ -48,6 +49,33 @@ public class KeycloakAdminClient {
             throw new IllegalStateException("Keycloak returned an invalid user Location header");
         }
         return userId;
+    }
+
+    public boolean updateUserEnabled(String userId, boolean enabled) {
+        Map<String, Object> user = restClient.get()
+                .uri("/admin/realms/{realm}/users/{userId}", realm, userId)
+                .header(HttpHeaders.AUTHORIZATION, bearerToken())
+                .retrieve()
+                .body(new ParameterizedTypeReference<>() { });
+
+        if (user == null || user.isEmpty()) {
+            throw new IllegalStateException("Keycloak user representation was not found: " + userId);
+        }
+
+        Object enabledValue = user.get("enabled");
+        if (!(enabledValue instanceof Boolean previousEnabled)) {
+            throw new IllegalStateException("Keycloak user representation did not include an enabled flag: " + userId);
+        }
+
+        user.put("enabled", enabled);
+        restClient.put()
+                .uri("/admin/realms/{realm}/users/{userId}", realm, userId)
+                .header(HttpHeaders.AUTHORIZATION, bearerToken())
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(user)
+                .retrieve()
+                .toBodilessEntity();
+        return previousEnabled;
     }
 
     public void deleteUser(String userId) {

@@ -10,6 +10,7 @@ public record UserProfileResponse(
         String fullName,
         String email,
         String mobileNumber,
+        boolean enabled,
         Instant createdAt,
         Instant updatedAt
 ) {
@@ -19,6 +20,7 @@ public record UserProfileResponse(
                 profile.getFullName(),
                 profile.getEmail(),
                 profile.getMobileNumber(),
+                profile.isEnabled(),
                 profile.getCreatedAt(),
                 profile.getUpdatedAt()
         );
