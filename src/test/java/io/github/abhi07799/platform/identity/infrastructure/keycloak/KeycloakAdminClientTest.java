@@ -165,4 +165,34 @@ class KeycloakAdminClientTest {
         server.verify();
     }
 
+    @Test
+    void restoresPreviousAdminRoleWithoutApplyingDemotionGuardDuringCompensation() {
+        server.expect(requestTo("http://localhost:8081/admin/realms/platform/clients?clientId=platform-api"))
+                .andExpect(method(HttpMethod.GET))
+                .andRespond(withSuccess("[{\"id\":\"client-uuid\"}]", MediaType.APPLICATION_JSON));
+
+        server.expect(requestTo("http://localhost:8081/admin/realms/platform/users/user-123/role-mappings/clients/client-uuid"))
+                .andExpect(method(HttpMethod.GET))
+                .andRespond(withSuccess("""
+                        [{"id":"admin-role","name":"ADMIN","composite":false,"clientRole":true,"containerId":"client-uuid"}]
+                        """, MediaType.APPLICATION_JSON));
+
+        server.expect(requestTo("http://localhost:8081/admin/realms/platform/clients/client-uuid/roles/STAFF"))
+                .andExpect(method(HttpMethod.GET))
+                .andRespond(withSuccess(
+                        "{\"id\":\"staff-role\",\"name\":\"STAFF\",\"composite\":false,\"clientRole\":true,\"containerId\":\"client-uuid\"}",
+                        MediaType.APPLICATION_JSON));
+
+        server.expect(requestTo("http://localhost:8081/admin/realms/platform/users/user-123/role-mappings/clients/client-uuid"))
+                .andExpect(method(HttpMethod.POST))
+                .andRespond(withStatus(HttpStatus.NO_CONTENT));
+
+        server.expect(requestTo("http://localhost:8081/admin/realms/platform/users/user-123/role-mappings/clients/client-uuid"))
+                .andExpect(method(HttpMethod.DELETE))
+                .andRespond(withStatus(HttpStatus.NO_CONTENT));
+
+        assertThat(client.restoreClientRole("user-123", "platform-api", "STAFF")).isEqualTo("ADMIN");
+        server.verify();
+    }
+
 }
