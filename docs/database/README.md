@@ -82,4 +82,4 @@ FROM flyway_schema_history
 ORDER BY installed_rank;
 ```
 
-The repository test suite keeps the ping endpoint test as a web-slice test so it does not require a running database. Database migration and repository integration checks should be run against PostgreSQL before merging this milestone.
+The repository test suite keeps the ping endpoint test as a web-slice test so it does not require a running database. For full database verification, start PostgreSQL and run the application locally; confirm that Flyway applies V1 and Hibernate starts with schema validation enabled.
