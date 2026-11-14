@@ -137,6 +137,22 @@ class AdminUserProvisioningControllerTest {
                 .andExpect(status().isForbidden());
     }
 
+
+    @Test
+    void returnsNotFoundWhenAdminTargetsAnUnknownUser() throws Exception {
+        UUID userId = UUID.fromString("f7f5d5b5-1f75-4a39-9c51-9a5d7b3d5f11");
+        when(statusService.updateEnabledStatus(userId, false))
+                .thenThrow(new io.github.abhi07799.platform.administration.application.AdminUserNotFoundException());
+
+        mockMvc.perform(patch("/api/v1/admin/users/{userId}/status", userId)
+                        .with(jwt().authorities(new SimpleGrantedAuthority("ROLE_ADMIN")))
+                        .contentType("application/json")
+                        .content("""
+                                {"enabled":false}
+                                """))
+                .andExpect(status().isNotFound());
+    }
+
     @Test
     void validatesThatEnabledIsProvided() throws Exception {
         UUID userId = UUID.fromString("f7f5d5b5-1f75-4a39-9c51-9a5d7b3d5f11");
