@@ -26,15 +26,18 @@ public class AdminUserProvisioningService {
 
     private final KeycloakAdminClient keycloakAdminClient;
     private final UserProfileRepository userProfileRepository;
+    private final AdminAuditPersistenceService auditPersistenceService;
 
     public AdminUserProvisioningService(
             KeycloakAdminClient keycloakAdminClient,
-            UserProfileRepository userProfileRepository) {
+            UserProfileRepository userProfileRepository,
+            AdminAuditPersistenceService auditPersistenceService) {
         this.keycloakAdminClient = keycloakAdminClient;
         this.userProfileRepository = userProfileRepository;
+        this.auditPersistenceService = auditPersistenceService;
     }
 
-    public RegistrationResponse provision(AdminUserProvisioningRequest request) {
+    public RegistrationResponse provision(AdminUserProvisioningRequest request, String actorSubjectId) {
         String normalizedEmail = request.email().trim().toLowerCase(Locale.ROOT);
         String fullName = request.fullName().trim();
         String mobileNumber = request.mobileNumber().trim();
@@ -45,13 +48,7 @@ public class AdminUserProvisioningService {
         }
 
         KeycloakUserRepresentation keycloakUser = new KeycloakUserRepresentation(
-                normalizedEmail,
-                normalizedEmail,
-                fullName,
-                null,
-                true,
-                false,
-                List.of(),
+                normalizedEmail, normalizedEmail, fullName, null, true, false, List.of(),
                 List.of(new KeycloakUserRepresentation.CredentialRepresentation(
                         "password", request.password(), false)));
 
@@ -71,9 +68,9 @@ public class AdminUserProvisioningService {
 
         try {
             keycloakAdminClient.assignClientRole(keycloakUserId, API_CLIENT_ID, role);
-            UserProfile profile = userProfileRepository.saveAndFlush(
-                    new UserProfile(keycloakUserId, fullName, normalizedEmail, mobileNumber));
-
+            UserProfile profile = auditPersistenceService.persistProvisionedUser(
+                    new UserProfile(keycloakUserId, fullName, normalizedEmail, mobileNumber),
+                    actorSubjectId, role);
             return new RegistrationResponse(
                     profile.getId(), profile.getFullName(), profile.getEmail(), profile.getCreatedAt());
         } catch (DataIntegrityViolationException exception) {

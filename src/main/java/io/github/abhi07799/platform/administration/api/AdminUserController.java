@@ -10,6 +10,8 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -51,14 +53,17 @@ public class AdminUserController {
     @PatchMapping("/{userId}/status")
     public UserProfileResponse updateUserStatus(
             @PathVariable UUID userId,
-            @Valid @RequestBody UpdateUserAccountStatusRequest request) {
-        return statusService.updateEnabledStatus(userId, request.enabled());
+            @Valid @RequestBody UpdateUserAccountStatusRequest request,
+            @AuthenticationPrincipal Jwt jwt) {
+        return statusService.updateEnabledStatus(userId, request.enabled(), jwt.getSubject());
     }
 
     @Operation(summary = "Create a STAFF or ADMIN account (ADMIN only)")
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public RegistrationResponse createUser(@Valid @RequestBody AdminUserProvisioningRequest request) {
-        return provisioningService.provision(request);
+    public RegistrationResponse createUser(
+            @Valid @RequestBody AdminUserProvisioningRequest request,
+            @AuthenticationPrincipal Jwt jwt) {
+        return provisioningService.provision(request, jwt.getSubject());
     }
 }

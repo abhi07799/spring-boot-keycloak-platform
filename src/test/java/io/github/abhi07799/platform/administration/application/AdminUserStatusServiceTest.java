@@ -35,11 +35,14 @@ class AdminUserStatusServiceTest {
     @Mock
     private KeycloakAdminClient keycloakAdminClient;
 
+    @Mock
+    private AdminAuditPersistenceService auditPersistenceService;
+
     private AdminUserStatusService service;
 
     @BeforeEach
     void setUp() {
-        service = new AdminUserStatusService(userProfileRepository, keycloakAdminClient);
+        service = new AdminUserStatusService(userProfileRepository, keycloakAdminClient, auditPersistenceService);
     }
 
     @Test
@@ -47,16 +50,16 @@ class AdminUserStatusServiceTest {
         UserProfile profile = new UserProfile(
                 KEYCLOAK_SUBJECT, "Test Person", "person@example.com", "+919876543210");
         when(userProfileRepository.findById(USER_ID)).thenReturn(Optional.of(profile));
-        when(userProfileRepository.saveAndFlush(profile)).thenReturn(profile);
+        when(auditPersistenceService.persistStatusChange(USER_ID, "admin-subject", true, false)).thenAnswer(invocation -> { profile.updateEnabled(false); return profile; });
         when(keycloakAdminClient.updateUserEnabled(KEYCLOAK_SUBJECT, false)).thenReturn(true);
 
-        UserProfileResponse response = service.updateEnabledStatus(USER_ID, false);
+        UserProfileResponse response = service.updateEnabledStatus(USER_ID, false, "admin-subject");
 
         assertThat(profile.isEnabled()).isFalse();
         assertThat(response.enabled()).isFalse();
-        InOrder order = inOrder(keycloakAdminClient, userProfileRepository);
+        InOrder order = inOrder(keycloakAdminClient, auditPersistenceService);
         order.verify(keycloakAdminClient).updateUserEnabled(KEYCLOAK_SUBJECT, false);
-        order.verify(userProfileRepository).saveAndFlush(profile);
+        order.verify(auditPersistenceService).persistStatusChange(USER_ID, "admin-subject", true, false);
     }
 
     @Test
@@ -65,10 +68,10 @@ class AdminUserStatusServiceTest {
                 KEYCLOAK_SUBJECT, "Test Person", "person@example.com", "+919876543210");
         profile.updateEnabled(false);
         when(userProfileRepository.findById(USER_ID)).thenReturn(Optional.of(profile));
-        when(userProfileRepository.saveAndFlush(profile)).thenReturn(profile);
+        when(auditPersistenceService.persistStatusChange(USER_ID, "admin-subject", false, true)).thenAnswer(invocation -> { profile.updateEnabled(true); return profile; });
         when(keycloakAdminClient.updateUserEnabled(KEYCLOAK_SUBJECT, true)).thenReturn(false);
 
-        UserProfileResponse response = service.updateEnabledStatus(USER_ID, true);
+        UserProfileResponse response = service.updateEnabledStatus(USER_ID, true, "admin-subject");
 
         assertThat(response.enabled()).isTrue();
         verify(keycloakAdminClient).updateUserEnabled(KEYCLOAK_SUBJECT, true);
@@ -78,7 +81,7 @@ class AdminUserStatusServiceTest {
     void doesNotCallKeycloakWhenApplicationUserDoesNotExist() {
         when(userProfileRepository.findById(USER_ID)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> service.updateEnabledStatus(USER_ID, false))
+        assertThatThrownBy(() -> service.updateEnabledStatus(USER_ID, false, "admin-subject"))
                 .isInstanceOf(AdminUserNotFoundException.class);
         verify(keycloakAdminClient, never()).updateUserEnabled(KEYCLOAK_SUBJECT, false);
     }
@@ -91,10 +94,10 @@ class AdminUserStatusServiceTest {
         doThrow(new IllegalStateException("Keycloak unavailable"))
                 .when(keycloakAdminClient).updateUserEnabled(KEYCLOAK_SUBJECT, false);
 
-        assertThatThrownBy(() -> service.updateEnabledStatus(USER_ID, false))
+        assertThatThrownBy(() -> service.updateEnabledStatus(USER_ID, false, "admin-subject"))
                 .isInstanceOf(KeycloakAccountStatusUpdateException.class);
         assertThat(profile.isEnabled()).isTrue();
-        verify(userProfileRepository, never()).saveAndFlush(profile);
+        verify(auditPersistenceService, never()).persistStatusChange(USER_ID, "admin-subject", true, false);
     }
 
     @Test
@@ -103,10 +106,10 @@ class AdminUserStatusServiceTest {
                 KEYCLOAK_SUBJECT, "Test Person", "person@example.com", "+919876543210");
         when(userProfileRepository.findById(USER_ID)).thenReturn(Optional.of(profile));
         when(keycloakAdminClient.updateUserEnabled(KEYCLOAK_SUBJECT, false)).thenReturn(true);
-        when(userProfileRepository.saveAndFlush(profile))
+        when(auditPersistenceService.persistStatusChange(USER_ID, "admin-subject", true, false))
                 .thenThrow(new DataIntegrityViolationException("database unavailable"));
 
-        assertThatThrownBy(() -> service.updateEnabledStatus(USER_ID, false))
+        assertThatThrownBy(() -> service.updateEnabledStatus(USER_ID, false, "admin-subject"))
                 .isInstanceOf(AdminUserStatusUpdateException.class);
         InOrder order = inOrder(keycloakAdminClient);
         order.verify(keycloakAdminClient).updateUserEnabled(KEYCLOAK_SUBJECT, false);
@@ -119,12 +122,12 @@ class AdminUserStatusServiceTest {
                 KEYCLOAK_SUBJECT, "Test Person", "person@example.com", "+919876543210");
         when(userProfileRepository.findById(USER_ID)).thenReturn(Optional.of(profile));
         when(keycloakAdminClient.updateUserEnabled(KEYCLOAK_SUBJECT, false)).thenReturn(true);
-        when(userProfileRepository.saveAndFlush(profile))
+        when(auditPersistenceService.persistStatusChange(USER_ID, "admin-subject", true, false))
                 .thenThrow(new DataIntegrityViolationException("database unavailable"));
         doThrow(new IllegalStateException("Keycloak unavailable"))
                 .when(keycloakAdminClient).updateUserEnabled(KEYCLOAK_SUBJECT, true);
 
-        assertThatThrownBy(() -> service.updateEnabledStatus(USER_ID, false))
+        assertThatThrownBy(() -> service.updateEnabledStatus(USER_ID, false, "admin-subject"))
                 .isInstanceOf(AdminUserStatusCompensationException.class);
     }
 }

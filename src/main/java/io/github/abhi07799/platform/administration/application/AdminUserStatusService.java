@@ -17,15 +17,18 @@ public class AdminUserStatusService {
 
     private final UserProfileRepository userProfileRepository;
     private final KeycloakAdminClient keycloakAdminClient;
+    private final AdminAuditPersistenceService auditPersistenceService;
 
     public AdminUserStatusService(
             UserProfileRepository userProfileRepository,
-            KeycloakAdminClient keycloakAdminClient) {
+            KeycloakAdminClient keycloakAdminClient,
+            AdminAuditPersistenceService auditPersistenceService) {
         this.userProfileRepository = userProfileRepository;
         this.keycloakAdminClient = keycloakAdminClient;
+        this.auditPersistenceService = auditPersistenceService;
     }
 
-    public UserProfileResponse updateEnabledStatus(UUID userId, boolean enabled) {
+    public UserProfileResponse updateEnabledStatus(UUID userId, boolean enabled, String actorSubjectId) {
         UserProfile profile = userProfileRepository.findById(userId)
                 .orElseThrow(AdminUserNotFoundException::new);
         boolean previousKeycloakEnabled;
@@ -37,8 +40,8 @@ public class AdminUserStatusService {
         }
 
         try {
-            profile.updateEnabled(enabled);
-            UserProfile savedProfile = userProfileRepository.saveAndFlush(profile);
+            UserProfile savedProfile = auditPersistenceService.persistStatusChange(
+                    userId, actorSubjectId, previousKeycloakEnabled, enabled);
             return UserProfileResponse.from(savedProfile);
         } catch (RuntimeException persistenceFailure) {
             try {
