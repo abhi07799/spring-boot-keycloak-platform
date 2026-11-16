@@ -167,7 +167,7 @@ class AdminUserControllerTest {
     @Test
     void returnsNotFoundWhenAdminTargetsAnUnknownUser() throws Exception {
         UUID userId = UUID.fromString("f7f5d5b5-1f75-4a39-9c51-9a5d7b3d5f11");
-        when(statusService.updateEnabledStatus(userId, false, anyString()))
+        when(statusService.updateEnabledStatus(eq(userId), eq(false), anyString()))
                 .thenThrow(new io.github.abhi07799.platform.administration.application.AdminUserNotFoundException());
 
         mockMvc.perform(patch("/api/v1/admin/users/{userId}/status", userId)
