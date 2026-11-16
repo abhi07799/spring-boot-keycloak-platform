@@ -12,10 +12,8 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Primary;
 import org.springframework.http.MediaType;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtException;
-import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.Instant;
@@ -23,8 +21,6 @@ import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.when;
@@ -33,7 +29,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(RegistrationController.class)
-@TestPropertySource(properties = "security.rate-limit.hmac-secret=0123456789abcdef0123456789abcdef")
 @Import({SecurityConfig.class, KeycloakRoleConverter.class, RegistrationControllerTest.TestConfigurationBeans.class})
 class RegistrationControllerTest {
 
@@ -112,14 +107,6 @@ class RegistrationControllerTest {
         @Primary
         UserProfileRepository userProfileRepository() {
             return mock(UserProfileRepository.class);
-        }
-
-        @Bean
-        @Primary
-        JdbcTemplate jdbcTemplate() {
-            JdbcTemplate template = mock(JdbcTemplate.class);
-            when(template.queryForObject(anyString(), eq(Integer.class), any(Object[].class))).thenReturn(1);
-            return template;
         }
 
         @Bean

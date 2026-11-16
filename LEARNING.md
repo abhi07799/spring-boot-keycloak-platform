@@ -642,34 +642,3 @@ Credentials and email action tokens belong to Keycloak. The backend initiates th
 **Verification**
 Tests were added but not executed because Maven is unavailable in this environment. Run `mvn test` with JDK 21 and Maven. Configure and test SMTP in Keycloak 26.8.2, then verify registration email delivery, verification-required login, resend behavior, password-reset email, action-link expiry, and successful login with the updated password.
 
-
-## Step 3.16 — Distributed rate limiting for public authentication endpoints
-
-**What we implemented**
-- Added a servlet filter that applies endpoint-specific limits before registration and account-recovery controller logic executes.
-- Registration is limited to **10 requests per source IP per 60-second fixed window**.
-- Password-reset and verification-resend endpoints are each limited to **5 requests per source IP per 900-second fixed window**.
-- Added Flyway V7 with a PostgreSQL bucket table. An atomic `INSERT ... ON CONFLICT DO UPDATE ... RETURNING` increments counters safely across concurrent requests and multiple application instances.
-- Bucket identifiers are HMAC-SHA256 digests of the endpoint path and source IP. Raw IP addresses are not stored in the rate-limit table.
-- Added a scheduled cleanup job that deletes expired buckets. The cleanup interval is configurable.
-- Requests over the limit receive HTTP 429 with a `Retry-After` header and a generic response. If the rate-limit database operation fails, the filter fails closed with HTTP 503 rather than silently bypassing protection.
-- Added filter tests and updated MVC tests to mock the rate-limit persistence dependency.
-
-**Why**
-Public registration and recovery endpoints can be abused for account creation, email flooding, and provider-cost exhaustion. A process-local in-memory counter is insufficient when the application runs on multiple replicas: each replica would maintain a separate counter. PostgreSQL provides one shared counter store and atomic increments, so all instances enforce the same limit.
-
-**Important concepts**
-- **Fixed-window counter:** requests are grouped into aligned time windows. It is simple and efficient, but a caller can make requests near the end of one window and again at the start of the next; the short-term burst can therefore approach twice the configured limit.
-- **Atomic upsert:** PostgreSQL increments the existing counter as one database statement. Concurrent application instances cannot both read the same old value and overwrite one another with a lost update.
-- **HMAC pseudonymization:** the bucket key is a keyed digest rather than a raw IP address. Keep `RATE_LIMIT_HMAC_SECRET` private and stable across replicas in one environment; rotate it deliberately because rotation starts new buckets.
-- **Fail closed:** if PostgreSQL cannot enforce the limit, these public endpoints return 503. This avoids turning a storage outage into an unrestricted public endpoint.
-- **Proxy boundary:** the filter uses `HttpServletRequest.getRemoteAddr()`; it does not trust arbitrary `X-Forwarded-For` values. Configure the trusted reverse proxy/container to resolve the real client address safely. Do not accept client-supplied forwarding headers directly.
-- **Defense in depth:** IP limits reduce automated abuse but do not replace bot detection, gateway/WAF controls, email-provider quotas, or per-account controls. Shared networks can also cause legitimate users to share an IP bucket.
-
-**Configuration**
-- `RATE_LIMIT_HMAC_SECRET`: private random secret, minimum 32 characters. The repository default is for local development only.
-- `RATE_LIMIT_CLEANUP_INTERVAL_MS`: cleanup interval in milliseconds; defaults to 3,600,000 (one hour).
-- Change the thresholds in `PublicAuthRateLimitFilter` only with an explicit capacity and abuse-risk decision.
-
-**Verification**
-Run `mvn test` with JDK 21 and Maven. Apply Flyway V7 and exercise the three public endpoints repeatedly from one source IP. Confirm the first configured number of requests reach the controller, the next request returns 429 with `Retry-After`, another source IP receives an independent bucket, and expired rows are removed by the scheduled cleanup. Also verify behavior through the actual reverse proxy before production rollout.
