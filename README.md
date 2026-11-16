@@ -78,13 +78,22 @@ Flyway applies versioned migrations at startup. Hibernate validates the resultin
 - `platform-admin-service`: confidential service-account client for backend Admin REST API calls.
 - Full Scope Allowed is disabled; Swagger receives only explicitly mapped API client roles.
 
-See [Keycloak configuration](docs/keycloak/README.md), [security setup](docs/security/README.md), [local infrastructure](docs/docker/README.md), [database setup](docs/database/README.md), and [backend package structure](docs/architecture/package-structure.md).
+See [Keycloak configuration](docs/keycloak/README.md), [security setup](docs/security/README.md), [local infrastructure](docs/docker/README.md), [database setup](docs/database/README.md), [backend package structure](docs/architecture/package-structure.md), and [CI documentation](docs/ci/README.md).
+
+## Continuous Integration
+GitHub Actions runs the **Java 21 / Maven Verify** job on pull requests targeting `develop` or `main` and on pushes to those branches. It uses JDK 21, Maven dependency caching, and runs:
+
+```bash
+mvn --batch-mode --no-transfer-progress clean verify
+```
+
+The workflow requires no application secrets or external services. Configure GitHub branch protection/rulesets separately if this check should be mandatory before merge. See [CI documentation](docs/ci/README.md).
 
 ## Branch workflow
 - `main`: stable baseline.
 - `develop`: integration branch.
-- `step1/initial-project-setup`: initial repository baseline.
-- Later milestones use numbered prefixes such as `step2.1/`, `step2.2/`, `step2.3/`, `step2.4/`, `step3.1/`, `step3.2/`, `step3.3/`, `step3.4/`, `step3.5/`, `step3.6/`, `step3.7/`, `step3.8/`, `step3.9/`, and `step3.10/`.
+- Every milestone gets its own numbered feature branch (for example, `step3.15/automated-ci-pipeline`), a focused PR targeting `develop`, and a corresponding `LEARNING.md` entry.
+- Merge only after CI and code review pass.
 
 ## Learning journal
 See [LEARNING.md](LEARNING.md).
