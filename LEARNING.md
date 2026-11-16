@@ -649,6 +649,8 @@ Tests were added but not executed because Maven is unavailable in this environme
 - Added a GitHub Actions Maven CI workflow for pull requests targeting `develop` or `main`, and pushes to those branches.
 - Configured Eclipse Temurin JDK 21 and Maven dependency caching through `actions/setup-java`.
 - Added a verification job that runs `mvn --batch-mode --no-transfer-progress clean verify`.
+- Fixed five existing test-fixture issues exposed by the first full CI run: Keycloak request expectation order, an unnecessary Mockito stub, mixed raw/matcher arguments, missing persistence setup in the role-audit test, and nested Mockito stubbing.
+- Updated checkout and setup-java to their v5 releases for current GitHub-hosted runner compatibility.
 - Added workflow concurrency cancellation so obsolete runs for the same branch/ref do not consume runner time.
 - Restricted the workflow token to read-only repository contents permission.
 - Documented the CI checks and the separate GitHub branch-protection configuration required to make the check mandatory.
@@ -670,4 +672,4 @@ Every feature branch PR should receive repeatable compilation and automated test
 - `LEARNING.md`
 
 **Verification**
-The workflow YAML and command were reviewed statically. The workflow will execute on GitHub after this branch is pushed and its PR is opened. No successful build or test result is claimed until the GitHub Actions run completes. The job intentionally does not start PostgreSQL, Keycloak, or SMTP; live integration verification remains separate.
+The first GitHub Actions run successfully checked out the repository and installed JDK 21, then exposed five failures/errors in existing tests (105 tests executed). Those test fixtures have been corrected on this branch. A fresh CI run is required to confirm the fixes; no passing result is claimed yet. The job intentionally does not start PostgreSQL, Keycloak, or SMTP; live integration verification remains separate.
