@@ -89,6 +89,11 @@ class AdminAuditPersistenceServiceTest {
 
     @Test
     void recordsPreviousAndNewApplicationRoles() {
+        UserProfile profile = new UserProfile("target-subject", "Test Person",
+                "person@example.com", "+919876543210");
+        when(userProfileRepository.findById(USER_ID)).thenReturn(Optional.of(profile));
+        when(userProfileRepository.saveAndFlush(profile)).thenReturn(profile);
+
         service.recordRoleChange(USER_ID, "admin-subject", "USER", "STAFF");
 
         ArgumentCaptor<AdminAuditEvent> event = ArgumentCaptor.forClass(AdminAuditEvent.class);
