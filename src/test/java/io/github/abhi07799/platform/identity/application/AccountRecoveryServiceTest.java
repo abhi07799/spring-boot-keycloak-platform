@@ -45,9 +45,10 @@ class AccountRecoveryServiceTest {
 
     @Test
     void doesNothingForUnknownOrDisabledAccounts() {
+        UserProfile disabledProfile = profile(false);
         when(userProfileRepository.findByEmailIgnoreCase("missing@example.com")).thenReturn(Optional.empty());
         when(userProfileRepository.findByEmailIgnoreCase("disabled@example.com"))
-                .thenReturn(Optional.of(profile(false)));
+                .thenReturn(Optional.of(disabledProfile));
 
         service.requestPasswordReset("missing@example.com");
         service.requestPasswordReset("disabled@example.com");
