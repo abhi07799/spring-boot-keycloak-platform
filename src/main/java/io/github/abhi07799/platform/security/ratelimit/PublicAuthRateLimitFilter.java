@@ -18,6 +18,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.Clock;
 import java.time.Instant;
+import java.sql.Timestamp;
 import java.util.HexFormat;
 import java.util.Map;
 
@@ -83,7 +84,7 @@ public class PublicAuthRateLimitFilter extends OncePerRequestFilter {
                     Integer.class,
                     bucketKey,
                     windowStart,
-                    expiresAt);
+                    Timestamp.from(expiresAt));
             requestCount = count == null ? policy.limit() + 1 : count;
         } catch (RuntimeException persistenceFailure) {
             // Fail closed: public authentication endpoints must not bypass limits when storage is unavailable.
