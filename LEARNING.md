@@ -641,3 +641,33 @@ Credentials and email action tokens belong to Keycloak. The backend initiates th
 
 **Verification**
 Tests were added but not executed because Maven is unavailable in this environment. Run `mvn test` with JDK 21 and Maven. Configure and test SMTP in Keycloak 26.8.2, then verify registration email delivery, verification-required login, resend behavior, password-reset email, action-link expiry, and successful login with the updated password.
+
+
+## Step 3.15 — Automated CI pipeline
+
+**What we implemented**
+- Added a GitHub Actions Maven CI workflow for pull requests targeting `develop` or `main`, and pushes to those branches.
+- Configured Eclipse Temurin JDK 21 and Maven dependency caching through `actions/setup-java`.
+- Added a verification job that runs `mvn --batch-mode --no-transfer-progress clean verify`.
+- Added workflow concurrency cancellation so obsolete runs for the same branch/ref do not consume runner time.
+- Restricted the workflow token to read-only repository contents permission.
+- Documented the CI checks and the separate GitHub branch-protection configuration required to make the check mandatory.
+
+**Why**
+Every feature branch PR should receive repeatable compilation and automated test feedback before merge. Running Maven's `verify` lifecycle catches compilation and test failures consistently on a clean GitHub-hosted runner instead of relying only on local developer environments.
+
+**Important concepts**
+- **Continuous Integration (CI):** automatically builds and tests proposed changes whenever code is pushed or a pull request is opened.
+- **GitHub Actions workflow:** YAML-defined automation composed of events, jobs, and steps.
+- **Maven verify lifecycle:** runs preceding lifecycle phases, including compilation and tests, then verification checks bound to the lifecycle.
+- **Dependency cache:** setup-java caches Maven's local repository to reduce repeated dependency downloads; it does not cache build outputs.
+- **Required status check:** branch protection/rulesets can require a successful CI job before merge. The workflow alone does not enable branch protection.
+
+**Files changed**
+- `.github/workflows/maven.yml`
+- `docs/ci/README.md`
+- `README.md`
+- `LEARNING.md`
+
+**Verification**
+The workflow YAML and command were reviewed statically. The workflow will execute on GitHub after this branch is pushed and its PR is opened. No successful build or test result is claimed until the GitHub Actions run completes. The job intentionally does not start PostgreSQL, Keycloak, or SMTP; live integration verification remains separate.
