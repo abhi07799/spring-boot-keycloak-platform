@@ -37,9 +37,9 @@ The backend is a Maven-based Spring MVC application secured as a stateless OAuth
 
 The backend uses KEYCLOAK_ADMIN_BASE_URL=http://localhost:8081 and realm platform by default. If running the backend inside Compose, use http://keycloak:8080 for the admin base URL and ensure the configured issuer/token endpoint is reachable from that container.
 
-- Registration endpoint: `POST http://localhost:8080/api/v1/auth/register` (public; assigns only `USER`, sends a Keycloak email-verification link, and allows 10 requests per source IP per minute).
-- Password reset request: `POST http://localhost:8080/api/v1/auth/password/forgot` (public; generic 202 response; Keycloak emails a one-time password-update link; 5 requests per source IP per 15 minutes).
-- Resend verification email: `POST http://localhost:8080/api/v1/auth/email/verification/resend` (public; generic 202 response; 5 requests per source IP per 15 minutes).
+- Registration endpoint: `POST http://localhost:8080/api/v1/auth/register` (public; assigns only `USER` and sends a Keycloak email-verification link).
+- Password reset request: `POST http://localhost:8080/api/v1/auth/password/forgot` (public; generic 202 response; Keycloak emails a one-time password-update link).
+- Resend verification email: `POST http://localhost:8080/api/v1/auth/email/verification/resend` (public; generic 202 response).
 - Current-user logout: `POST http://localhost:8080/api/v1/auth/logout` (authenticated; terminates all Keycloak sessions for the JWT subject).
 - Admin force logout: `POST http://localhost:8080/api/v1/admin/users/{userId}/logout` (ADMIN only; terminates all sessions for the target user).
 - Current user profile: `GET http://localhost:8080/api/v1/users/me` (authenticated; resolves the profile from the JWT subject).
