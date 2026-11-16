@@ -100,7 +100,7 @@ class AdminUserSessionServiceTest {
 
     private UserProfile profile() {
         UserProfile profile = org.mockito.Mockito.mock(UserProfile.class);
-        when(profile.getId()).thenReturn(USER_ID);
+        org.mockito.Mockito.lenient().when(profile.getId()).thenReturn(USER_ID);
         when(profile.getKeycloakSubjectId()).thenReturn("keycloak-user-123");
         return profile;
     }
