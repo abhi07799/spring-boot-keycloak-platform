@@ -51,11 +51,6 @@ keycloak:
     realm: ${KEYCLOAK_ADMIN_REALM:platform}
     action-token-lifespan-seconds: ${KEYCLOAK_ACTION_TOKEN_LIFESPAN_SECONDS:900}
 
-security:
-  rate-limit:
-    # Override in every environment with a private random secret of at least 32 characters.
-    hmac-secret: ${RATE_LIMIT_HMAC_SECRET:local-development-rate-limit-secret-change-me}
-    cleanup-interval-ms: ${RATE_LIMIT_CLEANUP_INTERVAL_MS:3600000}
 
 server:
   port: 8080
